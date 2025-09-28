@@ -1,0 +1,28 @@
+' {$STAMP BS2}
+' {$PBASIC 2.5}
+
+' Activity 4 (This one checks for double pressed)
+
+PAUSE 1000
+
+DO
+  DEBUG HOME
+  DEBUG ? IN4
+  DEBUG ? IN3
+
+  IF (IN3 = 1) AND (IN4 = 1) THEN
+    HIGH 14
+    HIGH 15
+    PAUSE 200
+  ELSEIF (IN3 = 1) THEN
+    HIGH 14
+    PAUSE 100
+  ELSE
+    PAUSE 50
+  ENDIF
+
+  LOW 14
+  LOW 15
+
+  PAUSE 50
+LOOP

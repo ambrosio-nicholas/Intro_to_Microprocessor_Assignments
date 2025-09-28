@@ -1,0 +1,63 @@
+' {$STAMP BS2}
+' {$PBASIC 2.5}
+
+' Activity 4 (This one checks for double pressed)
+
+PAUSE 1000 ' Wait 1 sec before 1st message.
+
+timeCounter VAR Word ' Declare variable to store time.
+value VAR Byte
+value = 23
+
+DEBUG "Press and hold both pushbuttons", CR, ' Display reaction instructions.
+"to make light turn red.", CR, CR,
+"When light turns green, let", CR,
+"go as fast as you can.", CR, CR
+
+DO ' Begin main loop.
+
+DO ' Nested loop repeats...
+
+LOOP UNTIL IN3 = 1 ' until pushbutton press.
+  HIGH 14 ' Bicolor LED red.
+  LOW 15
+
+  RANDOM value
+  DEBUG "Delay time ", ? 1000 + value, CR
+  PAUSE 1000 + (value * 4) ' Delay
+  LOW 14 ' Bicolor LED green.
+  HIGH 15
+  timeCounter = 0 ' Set timeCounter to zero
+
+  DO ' Nested loop, count time...
+    PAUSE 1
+    timeCounter = timeCounter + 1
+  LOOP UNTIL IN3 = 0 OR IN7 = 0 ' until pushbutton is released.
+
+  IF (IN3 = 0) THEN
+    DEBUG "Player 1 wins", CR, CR
+  ELSEIF (IN7 = 0) THEN
+     DEBUG "Player 2 wins", CR, CR
+  ELSEIF (IN3 AND IN7 = 0) THEN
+    DEBUG "It's a tie!", CR, CR
+  ENDIF
+
+  LOW 15 ' Bicolor LED off.
+
+  IF (timeCounter <= 2) THEN
+    DEBUG "You must wait until the light is green before releasing the button!", CR, CR
+  ELSE
+    timeCounter = timeCounter */ 548
+    DEBUG "The winner's time was ", DEC timeCounter, ' Display time measurement.
+    " ms.", CR, CR
+  ENDIF
+
+  DO
+    IF IN3 = 1 OR IN7 =1 THEN
+      PAUSE 100
+    ENDIF
+  LOOP UNTIL IN3 = 0 AND in7 = 0
+
+  DEBUG "To play again, hold both ", CR, ' Play again instructions.
+  "buttons down again.", CR, CR
+LOOP ' Back to "Begin main loop"

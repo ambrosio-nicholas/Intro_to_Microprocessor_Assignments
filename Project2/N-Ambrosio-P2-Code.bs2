@@ -1,0 +1,170 @@
+' Nicholas Ambroiso - Project 2 - Due Sept 29, 2025
+
+' {$STAMP BS2}
+' {$PBASIC 2.5}
+
+' Global variabes for waiting while checking for buttons
+timer VAR Word
+waitTime VAR Word
+isPressed VAR Bit
+isPressed = 0
+
+' Set names for each pin I use
+NS_R PIN 0
+NS_Y PIN 14
+NS_G PIN 2
+
+EW_G PIN 3
+EW_Y PIN 4
+EW_R PIN 5
+
+LT_G PIN 6
+LT_Y PIN 7
+LT_R PIN 15
+
+NS_Walk_R PIN 9
+NS_Walk_G PIN 10
+
+EW_Walk_R PIN 11
+EW_Walk_G PIN 12
+
+DO
+  ' Start by making all outputs other than red LEDs off for 2 seconds (and make red ones high)
+  LOW NS_Y
+  LOW NS_G
+  LOW EW_Y
+  LOW EW_G
+  LOW LT_Y
+  LOW LT_G
+  LOW NS_Walk_G
+  LOW EW_Walk_G
+  HIGH NS_R
+  HIGH EW_R
+  HIGH LT_R
+  HIGH NS_Walk_R
+  HIGH EW_Walk_R
+
+  'Wait for 2 seconds and check for button press
+  waitTime = 2000
+  GOSUB CheckButton
+  'DEBUG "here3"
+  GOSUB EmergencyButtonSequence
+
+  ' Make the Left-Turn arrows green
+  LOW LT_R
+  LOW LT_Y
+  HIGH LT_G
+  waitTime = 2000 'Let the left turn traffic go and check for button press
+  GOSUB CheckButton
+
+  ' Change the Left-Turn arrow to yellow
+  LOW LT_G
+  HIGH LT_Y
+  waitTime = 2000
+  GOSUB CheckButton
+
+  ' Change the Left-Turn arrow to red
+  LOW LT_Y
+  HIGH LT_R
+  waitTime = 2000
+  GOSUB CheckButton
+  ' Find out if emergency button should happen
+
+  ' Make the E-W lights green now
+  LOW EW_R
+  LOW EW_Y
+  HIGH EW_G
+  LOW NS_Walk_R
+  HIGH NS_Walk_G
+  'Let EW traffic go for a bit
+  waitTime = 5000
+  GOSUB CheckButton
+
+  ' Make the EW lights yellow
+  LOW EW_G
+  HIGH EW_Y
+  waitTime = 2000
+  GOSUB CheckButton
+
+  ' Make the EW lights red
+  LOW EW_Y
+  HIGH EW_R
+  LOW NS_Walk_G
+  HIGH NS_Walk_R
+  ' Let the interseection clear out
+  waitTime = 2000
+  GOSUB CheckButton
+  GOSUB EmergencyButtonSequence
+
+  ' Make the NS lights green
+  LOW NS_R
+  HIGH NS_G
+  LOW EW_Walk_R
+  HIGH EW_Walk_G
+  ' Let N and S traffic go for a bit
+  waitTime = 5000
+  GOSUB CheckButton
+
+  ' Make the NS lights yellow
+  LOW NS_G
+  HIGH NS_Y
+  waitTime = 2000
+  GOSUB CheckButton
+
+  ' Make the NS lights red
+  ' LOW NS_Y
+  ' HIGH NS_R
+  ' PAUSE 2000 'Let the intersection clear out
+
+  ' The next step should make these steps redundant
+
+'Repeat the traffic pattern
+LOOP
+
+
+' ----------SubRoutines-------------
+CheckButton:
+  FOR timer = 0 TO waitTime STEP 50
+  'DEBUG ? isPressed
+  'DEBUG ? IN13
+    IF IN13 = 1 THEN
+      PAUSE 100
+      isPressed = 1
+    ENDIF
+
+    PAUSE 50
+  NEXT
+
+  RETURN
+
+EmergencyButtonSequence:
+  IF isPressed = 1 THEN
+    isPressed = 0
+    LOW EW_R
+    DO
+      'NS lights flash red
+      'EW lights flash yellow
+      'Crosswalk lights flash red
+      LOW NS_R
+      LOW EW_Y
+      LOW EW_Walk_R
+      LOW NS_Walk_R
+
+      waitTime = 100
+      GOSUB CheckButton
+
+      HIGH NS_R
+      HIGH EW_Y
+      HIGH EW_Walk_R
+      HIGH NS_Walk_R
+
+      waitTime = 100
+      GOSUB CheckButton
+
+    LOOP UNTIL isPressed = 1
+
+    isPressed = 0
+    HIGH EW_R
+    LOW EW_Y
+  ENDIF
+  RETURN

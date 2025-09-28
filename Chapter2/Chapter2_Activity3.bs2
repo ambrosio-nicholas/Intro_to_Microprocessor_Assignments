@@ -1,0 +1,14 @@
+' What's a Microcontroller - LedOnOffTenTimes.bs2
+' Turn an LED on and off. Repeat 10 times.
+' {$STAMP BS2}
+' {$PBASIC 2.5}
+counter VAR Byte
+  FOR counter = 20 TO 120 STEP 10
+  DEBUG ? counter
+  HIGH 14
+  PAUSE 500
+  LOW 14
+  PAUSE 500
+NEXT
+DEBUG "All done!"
+END

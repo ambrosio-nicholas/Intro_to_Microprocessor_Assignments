@@ -1,0 +1,20 @@
+' {$STAMP BS2}
+' {$PBASIC 2.5}
+
+' Activity 3     (Twice as slow)
+
+DO
+  DEBUG ? IN3
+
+  IF (IN3 = 1) THEN
+    HIGH 14
+    PAUSE 100
+    LOW 14
+    PAUSE 100
+
+  ELSE
+    PAUSE 200
+
+  ENDIF
+
+LOOP

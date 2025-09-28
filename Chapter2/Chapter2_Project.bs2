@@ -1,0 +1,38 @@
+' A 10 second countdown where a bicolor led will stay red for the first 3 seconds
+' After 3 seconds it will turn green, and a yellow LED will flash on and off
+' once a second for 10 seconds. After it's done flashing, bicolor LED should turn
+' red and stay that way.
+' {$STAMP BS2}
+' {$PBASIC 2.5}
+
+counter VAR Byte
+counter = 0 'Initialize the counter variable
+
+'Make the BiColor RED
+HIGH 14 'Turn on the current going through the green led
+LOW 15  'Turn off the current going through the red led
+LOW 13  'Make sure the yellow LED is off
+
+PAUSE 3000
+
+FOR counter = 1 TO 10
+  countdown VAR Byte
+  countdown = 11 - counter
+  DEBUG "Count:", DEC countdown
+
+  HIGH 15 'Turn on the current going through the green led
+  LOW 14  'Turn off the current going through the red led
+
+  HIGH 13 'Turn on the yellow led
+  PAUSE 500
+  LOW 13  'Turn off the yellow led
+  PAUSE 500
+
+  DEBUG CR
+
+NEXT
+
+HIGH 14 'Turn on the current going through the green led
+LOW 15  'Turn off the current going through the red led
+
+END

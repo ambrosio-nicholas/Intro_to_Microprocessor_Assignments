@@ -1,0 +1,82 @@
+' Nicholas Ambroiso - Project 1 - Due Sept 22, 2025
+
+' {$STAMP BS2}
+' {$PBASIC 2.5}
+
+DO
+  ' Start by making all outputs other than red LEDs off for 2 seconds (and make red ones high)
+  LOW 0 'Not using this one
+  HIGH 1 'N and S red
+  LOW 2
+  LOW 3
+  HIGH 4 'W->E red
+  LOW 5
+  LOW 6
+  HIGH 7 'E->W red
+  LOW 8 'Not using this one
+  LOW 9
+  LOW 10
+  HIGH 11 'Left-Turn red
+  LOW 12
+  LOW 13
+  LOW 14   'Pedestrian Crossing E->W
+  LOW 15   'Pedestrian Crossing N->S
+
+  PAUSE 2000 'Wait for 2 seconds
+
+  ' Make the Left-Turn arrow green and the E->W light green
+  LOW 11 'Left Turn red
+  HIGH 13 'Left Turn green
+  LOW 7 'E->W red
+  HIGH 10 'E->W green
+  PAUSE 3000 'Let the left turn traffic go
+
+  ' Change the Left-Turn arrow to yellow
+  LOW 13 'Left turn green
+  HIGH 12 'Left turn yellow
+  PAUSE 2000
+
+  ' Change the Left-Turn arrow to red
+  LOW 12 'Left turn yellow
+  HIGH 11 'Left turn red
+  PAUSE 2000 'Let the intersection clear out
+
+  ' Make the W->E light green now
+  LOW 4 'W->E red
+  HIGH 6 'W->E green
+  HIGH 14 'Turn on the E->W Crosswalk
+  PAUSE 5000 'Let W->E traffic go for a bit
+
+  ' Make the W->E and E->W lights yellow
+  LOW 6  'W->E green
+  LOW 10  'E->W green
+  HIGH 5  'W->E yellow
+  HIGH 9  'E->W yellow
+  PAUSE 2000
+
+  ' Make the W->E and E->W lights red
+  LOW 5 'W->E Yellow
+  LOW 9 'E->W Yellow
+  HIGH 4 'W->E Red
+  HIGH 7 'E->W Red
+  LOW 14 'Turn off the E->W Crosswalk
+  PAUSE 2000 ' Let the intersection clear out
+
+  ' Make the N->S and S->N lights green
+  LOW 1 'N and S Red
+  HIGH 3 'N and S Green
+  HIGH 15 'Turn on the N->S Crosswalk
+  PAUSE 5000 ' Let N and S traffic go for a bit
+
+  ' Make the N->S and S->N lights yellow
+  LOW 3 'N and S Green
+  HIGH 2 'N and S Yellow
+  PAUSE 2000
+
+  ' Make the N->S and S->N lights red
+  LOW 2 'N and S Yellow
+  HIGH 1 'N and S Red
+  PAUSE 2000 'Let the intersection clear out
+
+'Repeat the traffic pattern
+LOOP

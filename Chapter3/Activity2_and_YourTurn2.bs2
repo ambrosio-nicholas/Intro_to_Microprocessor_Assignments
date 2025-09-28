@@ -1,0 +1,9 @@
+' {$STAMP BS2}
+' {$PBASIC 2.5}
+
+' Activity 3
+
+DO
+  DEBUG ? IN3
+  PAUSE 250
+LOOP
