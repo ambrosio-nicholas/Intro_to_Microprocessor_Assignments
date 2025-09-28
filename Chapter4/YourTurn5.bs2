@@ -1,0 +1,26 @@
+' Rotate the servo counterclockwise slowly, then clockwise rapidly.
+' {$STAMP BS2}
+' {$PBASIC 2.5}
+counter VAR Word
+
+PAUSE 1000
+
+DO
+  DEBUG "Pulse width increment by 8", CR
+
+    FOR counter = 500 TO 1000 STEP 2
+      PULSOUT 14, counter
+      PAUSE 8
+      DEBUG DEC5 counter, CR, CRSRUP
+    NEXT
+
+    DEBUG CR, "Pulse width decrement by 20", CR
+
+    FOR counter = 1000 TO 500 STEP 17
+      PULSOUT 14, counter
+      PAUSE 4
+      DEBUG DEC5 counter, CR, CRSRUP
+    NEXT
+
+    DEBUG CR, "Repeat", CR
+LOOP

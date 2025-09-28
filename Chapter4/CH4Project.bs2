@@ -1,0 +1,31 @@
+' Send messages to the BASIC Stamp to control a servo using
+' the Debug Terminal as long as kill switch is not being pressed.
+' {$STAMP BS2}
+' {$PBASIC 2.5}
+counter VAR Word
+pulses VAR Word
+duration VAR Word
+
+DO
+  PAUSE 2000
+
+  IF (IN3 = 1) AND (IN4 = 0) THEN
+    DEBUG "Press Start switch to start machinery. ", CR ,CRSRUP
+  ELSEIF (IN3 = 0) AND (IN4 = 1) THEN
+    DEBUG CLS, "Enter number of pulses:", CR
+    DEBUGIN DEC pulses
+
+    DEBUG "Enter PULSOUT duration:", CR
+    DEBUGIN DEC duration
+
+    DEBUG "Servo is running...", CR
+
+    FOR counter = 1 TO pulses
+      PULSOUT 14, duration
+      PAUSE 20
+    NEXT
+
+    DEBUG "DONE"
+    PAUSE 2000
+    ENDIF
+LOOP

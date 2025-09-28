@@ -1,0 +1,28 @@
+' Press and hold P4 pushbutton to rotate the servo counterclockwise,
+' or press the pushbutton connected to P3 to rotate the servo clockwise.
+' {$STAMP BS2}
+' {$PBASIC 2.5}
+duration VAR Word
+duration = 750
+
+PAUSE 1000
+
+DO
+  IF IN3 = 1 THEN
+    IF duration > 260 THEN     ' Close to the lower limit of my servo
+      duration = duration - 15
+    ENDIF
+  ENDIF
+
+  IF IN4 = 1 THEN
+    IF duration < 1250 THEN   ' Close to the upper limit of my servo
+      duration = duration + 15
+    ENDIF
+  ENDIF
+
+  PULSOUT 14, duration
+
+  PAUSE 10
+
+  DEBUG HOME, DEC4 duration, " = duration"
+LOOP

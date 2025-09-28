@@ -1,0 +1,10 @@
+' What's a Microcontroller - ServoCenter.bs2
+' Hold the servo in a different angle and get a feel for the servo
+' {$STAMP BS2}
+' {$PBASIC 2.5}
+DEBUG "Program Running!", CR
+
+DO
+  PULSOUT 14, 417
+  PAUSE 20
+LOOP

@@ -1,0 +1,33 @@
+' What's a Microcontroller – ThreeServoPositions.bs2
+' Adjust servo position and holding time
+' {$STAMP BS2}
+' {$PBASIC 2.5}
+
+counter VAR Word
+
+PAUSE 1000
+
+DEBUG "Position = 1 degree...", CR
+
+FOR counter = 1 TO 200
+  PULSOUT 14, 260
+  PAUSE 20
+NEXT
+
+DEBUG "Position = 45 degrees...", CR
+
+FOR counter = 1 TO 100
+  PULSOUT 14, 500
+  PAUSE 20
+NEXT
+
+DEBUG "Position = 180 degrees...", CR
+
+FOR counter = 1 TO 300
+  PULSOUT 14, 1250
+  PAUSE 20
+NEXT
+
+DEBUG "All done.", CR, CR
+
+END

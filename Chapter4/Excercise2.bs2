@@ -1,0 +1,23 @@
+' {$STAMP BS2}
+' {$PBASIC 2.5}
+
+' Define a Byte to hold a count of our pulses
+pulses VAR Byte
+
+' Sweep from 700 to 800 with ten pulses between each increase
+FOR counter = 700 TO 800 STEP 4
+  FOR pulses = 1 TO 10
+    PULSOUT 14, counter
+    PAUSE 20
+  NEXT
+NEXT
+
+' Sweep from 800 to 700 with ten pulses between each increase
+FOR counter = 800 TO 700 STEP 4
+  FOR pulses = 1 TO 10
+    PULSOUT 14, counter
+    PAUSE 20
+  NEXT
+NEXT
+
+END
