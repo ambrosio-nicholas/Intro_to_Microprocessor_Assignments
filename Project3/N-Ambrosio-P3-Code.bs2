@@ -1,0 +1,124 @@
+' Nicholas Ambrosio - Project 3 - 9/28/2025
+' This program should simulate a traffic arm that blocks a gated entrance.
+' It requires the correct code to be opened, and it has lights and an emergency button.
+
+' {$STAMP BS2}
+' {$PBASIC 2.5}
+
+'Set names of the pins I will use
+'pushButton1     PIN 0
+'pushButton2     PIN 1
+'pushButton3     PIN 3
+'emergencyButton PIN 4
+redLED           PIN 5
+yellowLED        PIN 6
+greenLED         PIN 7
+servo            PIN 14
+
+'Initialize some variables (including how many times each pushbutton has to be pressed)
+firstNum VAR Byte
+firstNum = 1 ' First num of code
+
+secNum VAR Byte
+secNum = 5 ' Second num of code
+
+thirdNum VAR Byte
+thirdNum = 4 ' Third num of code
+
+totalNumOfPushes VAR Byte
+totalNumOfPushes = firstNum + secNum + thirdNum
+
+timesPressed VAR Byte
+timesPressed = 0
+
+timesPB1Pressed VAR Byte
+timesPB2Pressed VAR Byte
+timesPB3Pressed VAR Byte
+
+counter VAR Word
+beenPressed VAR Bit
+
+'Start with the gate closed and the red LED on
+redLED HIGH
+yellowLED LOW
+greenLED LOW
+
+FOR counter = 1 TO 10 '10 20ms pulses
+  PULSOUT servo, 260 '260 is as close to 0 degrees for my servo
+  PAUSE 20
+NEXT
+
+DO
+  ' Clear out any past codes
+  timesPB1Pressed = 0
+  timesPB2Pressed = 0
+  timesPB3Pressed = 0
+  timesPressed = 0
+
+  'Let the user enter a code
+  FOR timesPressed < totalNumOfPushes 'Check for all button presses
+    DO
+      beenPressed = 0 'Toggle our detector to false
+      IF (IN0 = 1) AND (timesPB2Pressed = 0) AND (timesPB3Pressed = 0) 'AND (timesPressed < 4) Check for PB1, Make sure PB 2 or 3 hasn't been pushed
+        timesPB1Pressed += 1 'Add to its count
+        beenPressed = 1
+      ELSEIF (IN1 = 1) AND (timesPB1Pressed > 0) AND (timesPB3Pressed = 0) 'AND (timesPressed < 8) Check for PB2, Make sure PB 3 hasn't been pushed, make sure PB1 has been pressed
+        timesPB2Pressed += 1 'Add to its count
+        beenPressed = 1
+      ELSEIF (IN2 = 1) AND (timesPB2Pressed > 0) 'AND (timesPressed < 12) Check for PB3, make sure PB2 has been pressed
+      timesPB3Pressed += 1 'Add to its count
+      beenPressed = 1
+      ENDIF
+    UNTIL beenPressed = 1 'Keep checking until a button has been pressed
+    PAUSE 200 'Wait for them to let go of the button
+  NEXT 'Increment timespressed
+
+  DEBUG "Code Entered is: ", timesPB1Pressed, " ", timesPB2Pressed, " ", timesPB3Pressed, CR
+  'Check the code
+  IF (timesPB1Pressed = firstNum) AND (timesPB2Pressed = secNum) AND (timesPB3Pressed = thirdNum) THEN
+    'If the code is right
+    redLED LOW
+    FOR counter = 1 TO 10 'flash yellow LED ten times (.25s on, .25s off)
+      yellowLED HIGH
+      PAUSE 250
+      yellowLED LOW
+      PAUSE 250
+    NEXT
+
+    'open gate
+    FOR counter = 1 TO 10 '10 20ms pulses
+      PULSOUT servo, 750 'should be about 90 degrees
+      PAUSE 20
+    NEXT
+
+    'turn on green LED
+    greenLED HIGH
+    yellowLED LOW
+
+    PAUSE 10000 'wait 10 seconds
+
+    greenLED LOW
+    FOR counter = 1 TO 10 'flash yellow LED ten times (.25s on, .25s off)
+      yellowLED HIGH
+      PAUSE 250
+      yellowLED LOW
+      PAUSE 250
+    NEXT
+
+    'close gate
+    FOR counter = 1 TO 10 '10 20ms pulses
+      PULSOUT servo, 260 'should be about 90 degrees
+      PAUSE 20
+    NEXT
+
+    'turn on red LED
+    redLED HIGH
+  ELSE
+    'If the code is wrong
+    FOR counter = 1 TO 3 'flash red LED three times (.25s on, .25s off)
+      redLED HIGH
+      PAUSE 250
+      redLED LOW
+      PAUSE 250
+    NEXT
+LOOP
