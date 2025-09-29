@@ -37,6 +37,7 @@ timesPB3Pressed VAR Byte
 
 counter VAR Word
 beenPressed VAR Bit
+emergencyBeenPressed VAR Bit
 
 'Start with the gate closed and the red LED on
 redLED HIGH
@@ -59,18 +60,21 @@ DO
   FOR timesPressed < totalNumOfPushes 'Check for all button presses
     DO
       beenPressed = 0 'Toggle our detector to false
-      IF (IN0 = 1) AND (timesPB2Pressed = 0) AND (timesPB3Pressed = 0) 'AND (timesPressed < 4) Check for PB1, Make sure PB 2 or 3 hasn't been pushed
+      IF (IN0 = 1) AND (timesPB2Pressed = 0) AND (timesPB3Pressed = 0) THEN 'AND (timesPressed < 4) Check for PB1, Make sure PB 2 or 3 hasn't been pushed
         timesPB1Pressed += 1 'Add to its count
         beenPressed = 1
-      ELSEIF (IN1 = 1) AND (timesPB1Pressed > 0) AND (timesPB3Pressed = 0) 'AND (timesPressed < 8) Check for PB2, Make sure PB 3 hasn't been pushed, make sure PB1 has been pressed
+      ELSEIF (IN1 = 1) AND (timesPB1Pressed > 0) AND (timesPB3Pressed = 0) THEN 'AND (timesPressed < 8) Check for PB2, Make sure PB 3 hasn't been pushed, make sure PB1 has been pressed
         timesPB2Pressed += 1 'Add to its count
         beenPressed = 1
-      ELSEIF (IN2 = 1) AND (timesPB2Pressed > 0) 'AND (timesPressed < 12) Check for PB3, make sure PB2 has been pressed
+      ELSEIF (IN3 = 1) AND (timesPB2Pressed > 0) THEN 'AND (timesPressed < 12) Check for PB3, make sure PB2 has been pressed
       timesPB3Pressed += 1 'Add to its count
       beenPressed = 1
+      ELSEIF (IN4 = 1) THEN
+      emergencyBeenPressed = 1
       ENDIF
     UNTIL beenPressed = 1 'Keep checking until a button has been pressed
     PAUSE 200 'Wait for them to let go of the button
+    GOSUB checkEmergency
   NEXT 'Increment timespressed
 
   DEBUG "Code Entered is: ", timesPB1Pressed, " ", timesPB2Pressed, " ", timesPB3Pressed, CR
@@ -83,32 +87,40 @@ DO
       PAUSE 250
       yellowLED LOW
       PAUSE 250
+      GOSUB checkEmergency
     NEXT
 
     'open gate
     FOR counter = 1 TO 10 '10 20ms pulses
       PULSOUT servo, 750 'should be about 90 degrees
       PAUSE 20
+      GOSUB checkEmergency
     NEXT
 
     'turn on green LED
     greenLED HIGH
     yellowLED LOW
 
-    PAUSE 10000 'wait 10 seconds
+    FOR counter 1 TO 1000
+      PAUSE 10 'wait 10 seconds
+      GOSUB checkEmergency
+    NEXT
 
     greenLED LOW
+
     FOR counter = 1 TO 10 'flash yellow LED ten times (.25s on, .25s off)
       yellowLED HIGH
       PAUSE 250
       yellowLED LOW
       PAUSE 250
+      GOSUB checkEmergency
     NEXT
 
     'close gate
     FOR counter = 1 TO 10 '10 20ms pulses
       PULSOUT servo, 260 'should be about 90 degrees
       PAUSE 20
+      GOSUB checkEmergency
     NEXT
 
     'turn on red LED
@@ -120,5 +132,45 @@ DO
       PAUSE 250
       redLED LOW
       PAUSE 250
+      GOSUB checkEmergency
     NEXT
 LOOP
+
+' A Subroutine for when the emergeny button has been pressed
+checkEmergency:
+  IF (IN4 = 1) THEN
+    emergencyBeenPressed = 1
+  ENDIF
+
+  IF emergencyBeenPressed = 1 THEN
+    emergencyBeenPressed = 0 'reset the bool
+    redLED LOW
+    greenLED LOW
+
+    'open gate
+    FOR counter = 1 TO 10 '10 20ms pulses
+      PULSOUT servo, 750 'should be about 90 degrees
+      PAUSE 20
+    NEXT
+
+    DO
+      yellowLED HIGH
+      PAUSE 250
+      yellowLED LOW
+      PAUSE 250
+    UNTIL emergencyBeenPressed = 1
+
+    emergencyBeenPressed = 0 'reset the bool
+
+    'close gate
+    FOR counter = 1 TO 10 '10 20ms pulses
+      PULSOUT servo, 260 'should be about 90 degrees
+      PAUSE 20
+      GOSUB checkEmergency
+    NEXT
+
+    'turn on red LED
+    redLED HIGH
+
+  ENDIF
+  RETURN
