@@ -9,7 +9,7 @@ PAUSE 1000
 
 DO
   IF IN3 = 1 THEN
-    IF duration > 260 THEN     ' Close to the lower limit of my servo
+    IF duration > 270 THEN     ' Close to the lower limit of my servo
       duration = duration - 15
     ENDIF
   ENDIF

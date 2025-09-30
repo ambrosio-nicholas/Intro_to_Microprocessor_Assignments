@@ -3,21 +3,28 @@
 
 ' Define a Byte to hold a count of our pulses
 pulses VAR Byte
+counter VAR Word
+duration VAR Byte
+duration = 4
 
 ' Sweep from 700 to 800 with ten pulses between each increase
-FOR counter = 700 TO 800 STEP 4
+FOR counter = 700 TO 800 STEP duration
   FOR pulses = 1 TO 10
     PULSOUT 14, counter
+    'DEBUG DEC counter, CR
     PAUSE 20
   NEXT
+  duration = duration + 4
 NEXT
 
 ' Sweep from 800 to 700 with ten pulses between each increase
-FOR counter = 800 TO 700 STEP 4
+FOR counter = 800 TO 700 STEP duration
   FOR pulses = 1 TO 10
     PULSOUT 14, counter
+    'DEBUG DEC counter, CR
     PAUSE 20
   NEXT
+  duration = duration - 4
 NEXT
 
 END
