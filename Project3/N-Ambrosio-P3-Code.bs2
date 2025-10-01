@@ -1,4 +1,4 @@
-' Nicholas Ambrosio - Project 3 - 9/28/2025
+' Nicholas Ambrosio - Project 3 - 10/08/2025
 ' This program should simulate a traffic arm that blocks a gated entrance.
 ' It requires the correct code to be opened, and it has lights and an emergency button.
 
@@ -17,13 +17,13 @@ servo            PIN 14
 
 'Initialize some variables (including how many times each pushbutton has to be pressed)
 firstNum VAR Byte
-firstNum = 1 ' First num of code
+firstNum = 4 ' First num of code
 
 secNum VAR Byte
-secNum = 5 ' Second num of code
+secNum = 3 ' Second num of code
 
 thirdNum VAR Byte
-thirdNum = 4 ' Third num of code
+thirdNum = 2 ' Third num of code
 
 totalNumOfPushes VAR Byte
 totalNumOfPushes = firstNum + secNum + thirdNum
@@ -36,60 +36,80 @@ timesPB2Pressed VAR Byte
 timesPB3Pressed VAR Byte
 
 counter VAR Word
+counter2 VAR Word
 beenPressed VAR Bit
 emergencyBeenPressed VAR Bit
+emergencyBeenPressed = 0
 
+main:
 'Start with the gate closed and the red LED on
 HIGH redLED
 LOW yellowLED
 LOW greenLED
 
+'DEBUG ? emergencyBeenPressed
+
 FOR counter = 1 TO 10 '10 20ms pulses
-  PULSOUT servo, 260 '260 is as close to 0 degrees for my servo
+  PULSOUT servo, 265 '260 is as close to 0 degrees for my servo
   PAUSE 20
   GOSUB checkEmergency
 NEXT
 
 DO
   ' Clear out any past codes
-  timesPB1Pressed = 0
-  timesPB2Pressed = 0
-  timesPB3Pressed = 0
-  timesPressed = 0
+  GOSUB clearCode
 
   'Let the user enter a code
-  FOR timesPressed = 0 TO totalNumOfPushes 'Check for all button presses
+  FOR timesPressed = 1 TO totalNumOfPushes 'Check for all button presses
     DO
       beenPressed = 0 'Toggle our detector to false
       IF (IN0 = 1) AND (timesPB2Pressed = 0) AND (timesPB3Pressed = 0) THEN 'AND (timesPressed < 4) Check for PB1, Make sure PB 2 or 3 hasn't been pushed
+        PAUSE 200
         timesPB1Pressed = timesPB1Pressed + 1 'Add to its count
         beenPressed = 1
+        'DEBUG "1 "
       ELSEIF (IN1 = 1) AND (timesPB1Pressed > 0) AND (timesPB3Pressed = 0) THEN 'AND (timesPressed < 8) Check for PB2, Make sure PB 3 hasn't been pushed, make sure PB1 has been pressed
+        PAUSE 200
         timesPB2Pressed = timesPB2Pressed + 1 'Add to its count
         beenPressed = 1
+        'DEBUG "2 "
       ELSEIF (IN3 = 1) AND (timesPB2Pressed > 0) THEN 'AND (timesPressed < 12) Check for PB3, make sure PB2 has been pressed
-      timesPB3Pressed = timesPB3Pressed + 1 'Add to its count
-      beenPressed = 1
+        PAUSE 200
+        timesPB3Pressed = timesPB3Pressed + 1 'Add to its count
+        beenPressed = 1
+        'DEBUG "3 "
       ELSEIF (IN4 = 1) THEN
-      emergencyBeenPressed = 1
+        'DEBUG "HERE"
+        PAUSE 200
+        emergencyBeenPressed = 1
+      ELSEIF (IN3 = 1 OR IN1 = 1 OR IN0 = 1) THEN
+        PAUSE 200
+        beenPressed = 1
       ENDIF
+      PAUSE 50
       GOSUB checkEmergency
     LOOP UNTIL beenPressed = 1 'Keep checking until a button has been pressed
-    PAUSE 200 'Wait for them to let go of the button
+     ' DEBUG "X "
     GOSUB checkEmergency
   NEXT 'Increment timespressed
 
-  DEBUG "Code Entered is: ", timesPB1Pressed, " ", timesPB2Pressed, " ", timesPB3Pressed, CR
+  DEBUG "Code Entered", CR
   'Check the code
   IF (timesPB1Pressed = firstNum) AND (timesPB2Pressed = secNum) AND (timesPB3Pressed = thirdNum) THEN
     'If the code is right
     LOW redLED
-    FOR counter = 1 TO 10 'flash yellow LED ten times (.25s on, .25s off)
+    FOR counter2 = 1 TO 10 'flash yellow LED ten times (.25s on, .25s off)
       HIGH yellowLED
-      PAUSE 250
+      'DEBUG "FLASH"
+      FOR counter = 1 TO 50
+        PAUSE 1
+        GOSUB checkEmergency
+      NEXT
       LOW yellowLED
-      PAUSE 250
-      GOSUB checkEmergency
+      FOR counter = 1 TO 50
+        PAUSE 1
+        GOSUB checkEmergency
+      NEXT
     NEXT
 
     'open gate
@@ -104,19 +124,24 @@ DO
     LOW yellowLED
 
     FOR counter = 1 TO 1000
-      PAUSE 10 'wait 10 seconds
+      PAUSE 1 'wait 10 seconds
       GOSUB checkEmergency
     NEXT
 
     LOW greenLED
 
-    FOR counter = 1 TO 10 'flash yellow LED ten times (.25s on, .25s off)
+    FOR counter2 = 1 TO 10 'flash yellow LED ten times (.25s on, .25s off)
       HIGH yellowLED
-      PAUSE 250
-      GOSUB checkEmergency
+      'DEBUG "FLASH"
+      FOR counter = 1 TO 50
+        PAUSE 1
+        GOSUB checkEmergency
+      NEXT
       LOW yellowLED
-      PAUSE 250
-      GOSUB checkEmergency
+      FOR counter = 1 TO 50
+        PAUSE 1
+        GOSUB checkEmergency
+      NEXT
     NEXT
 
     'close gate
@@ -138,12 +163,17 @@ DO
       PAUSE 250
       GOSUB checkEmergency
     NEXT
+
+    HIGH redLED
   ENDIF
 LOOP
+RETURN
 
 ' A Subroutine for when the emergeny button has been pressed
 checkEmergency:
   IF (IN4 = 1) THEN
+  PAUSE 20
+    DEBUG ? emergencyBeenPressed
     emergencyBeenPressed = 1
   ENDIF
 
@@ -160,22 +190,42 @@ checkEmergency:
 
     DO
       HIGH yellowLED
-      PAUSE 250
+      FOR counter = 1 TO 100
+        PAUSE 1
+        IF (IN4 = 1) THEN
+          emergencyBeenPressed = 1
+        ENDIF
+      NEXT
       LOW yellowLED
-      PAUSE 250
+      FOR counter = 1 TO 100
+        PAUSE 1
+        IF (IN4 = 1) THEN
+          emergencyBeenPressed = 1
+        ENDIF
+      NEXT
+      DEBUG ? emergencyBeenPressed
     LOOP UNTIL emergencyBeenPressed = 1
 
+    GOSUB clearCode
     emergencyBeenPressed = 0 'reset the bool
 
     'close gate
     FOR counter = 1 TO 10 '10 20ms pulses
-      PULSOUT servo, 260 'should be about 90 degrees
+      PULSOUT servo, 265 'should be about 90 degrees
       PAUSE 20
       GOSUB checkEmergency
     NEXT
 
     'turn on red LED
     HIGH redLED
-
+    GOSUB main
   ENDIF
+  RETURN
+
+  clearCode:
+  'DEBUG "Code Cleared"
+    timesPB1Pressed = 0
+    timesPB2Pressed = 0
+    timesPB3Pressed = 0
+    timesPressed = 1
   RETURN
