@@ -1,0 +1,16 @@
+' {$STAMP BS2}
+' {$PBASIC 2.5}
+
+PAUSE 1000
+DEBUG "Program Running!"
+
+time VAR Word
+
+DO
+  HIGH 7
+  PAUSE 10
+  RCTIME 7, 1, time
+  time = time */ 185 ' Scale by 0.724 (X 256 for */).
+  time = time + 500 ' Offset by 500.
+  PULSOUT 14, time ' Send pulse to servo.
+LOOP

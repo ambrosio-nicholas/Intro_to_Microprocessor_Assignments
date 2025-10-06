@@ -1,0 +1,31 @@
+' {$STAMP BS2}
+' {$PBASIC 2.5}
+
+timeCounter VAR Word
+counter VAR Nib
+
+PAUSE 1000
+DEBUG CLS
+HIGH 7
+DEBUG "Capacitor Charging...", CR
+
+FOR counter = 5 TO 0
+  PAUSE 1000
+  DEBUG DEC2 counter, CR, CRSRUP
+NEXT
+
+DEBUG CR, CR, "Measure decay time now!", CR, CR
+INPUT 7
+
+DO
+  PAUSE 100
+  timeCounter = timeCounter + 1
+  DEBUG ? IN7
+  DEBUG DEC5 timeCounter, CR, CRSRUP, CRSRUP
+LOOP UNTIL IN7 = 0
+
+DEBUG CR, CR, CR, "The RC decay time was ",
+DEC timeCounter, CR,
+"tenths of a second.", CR, CR
+
+END

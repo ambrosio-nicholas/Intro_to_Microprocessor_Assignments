@@ -17,13 +17,13 @@ servo            PIN 14
 
 'Initialize some variables (including how many times each pushbutton has to be pressed)
 firstNum VAR Byte
-firstNum = 4 ' First num of code
+firstNum = 2 ' First num of code
 
 secNum VAR Byte
 secNum = 3 ' Second num of code
 
 thirdNum VAR Byte
-thirdNum = 2 ' Third num of code
+thirdNum = 4 ' Third num of code
 
 totalNumOfPushes VAR Byte
 totalNumOfPushes = firstNum + secNum + thirdNum
@@ -64,26 +64,26 @@ DO
     DO
       beenPressed = 0 'Toggle our detector to false
       IF (IN0 = 1) AND (timesPB2Pressed = 0) AND (timesPB3Pressed = 0) THEN 'AND (timesPressed < 4) Check for PB1, Make sure PB 2 or 3 hasn't been pushed
-        PAUSE 200
+        PAUSE 150
         timesPB1Pressed = timesPB1Pressed + 1 'Add to its count
         beenPressed = 1
         'DEBUG "1 "
       ELSEIF (IN1 = 1) AND (timesPB1Pressed > 0) AND (timesPB3Pressed = 0) THEN 'AND (timesPressed < 8) Check for PB2, Make sure PB 3 hasn't been pushed, make sure PB1 has been pressed
-        PAUSE 200
+        PAUSE 150
         timesPB2Pressed = timesPB2Pressed + 1 'Add to its count
         beenPressed = 1
         'DEBUG "2 "
       ELSEIF (IN3 = 1) AND (timesPB2Pressed > 0) THEN 'AND (timesPressed < 12) Check for PB3, make sure PB2 has been pressed
-        PAUSE 200
+        PAUSE 150
         timesPB3Pressed = timesPB3Pressed + 1 'Add to its count
         beenPressed = 1
         'DEBUG "3 "
       ELSEIF (IN4 = 1) THEN
         'DEBUG "HERE"
-        PAUSE 200
+        PAUSE 150
         emergencyBeenPressed = 1
       ELSEIF (IN3 = 1 OR IN1 = 1 OR IN0 = 1) THEN
-        PAUSE 200
+        PAUSE 150
         beenPressed = 1
       ENDIF
       PAUSE 50

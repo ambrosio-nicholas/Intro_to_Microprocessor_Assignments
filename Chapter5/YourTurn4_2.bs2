@@ -1,0 +1,45 @@
+' {$STAMP BS2}
+' {$PBASIC 2.5}
+
+rcPin PIN 8 ' I/O Pin Definitions
+servoPin PIN 14
+scaleFactor CON 220 ' Constant Declarations CHANGE SCALE FACTOR
+offset CON 500 ' CHANGE OFFSET
+delay CON 10
+
+time VAR Word ' Variable Declaration
+prevTime VAR Word ' previous reading
+
+PAUSE 1000 ' Initialization
+
+DO
+' Main Routine
+  prevTime = time
+  HIGH rcPin ' RC decay measurement
+  PAUSE delay
+  RCTIME rcPin, 1, time
+
+  time = time */ scaleFactor ' Scale scaleFactor.
+  time = time + offset ' Offset by offset.
+
+  IF time < 650 THEN
+    time = 650
+  ENDIF
+  IF time > 850 THEN
+    time = 850
+  ENDIF
+
+  IF ( time > prevTime + 2) THEN ' increased resistance
+    HIGH 13 ' Bicolor LED red
+    LOW 12
+  ELSEIF ( time < prevTime - 2) THEN ' value decreased, turned ClockWise
+    LOW 13 ' Bicolor LED green
+    HIGH 12
+  ELSE ' Servo holding position
+    LOW 13 ' LED off
+    LOW 12
+  ENDIF
+
+  PULSOUT servoPin, time ' Send pulse to servo.
+  DEBUG HOME, DEC5 time ' Display adjusted time value.
+LOOP
