@@ -56,7 +56,7 @@ LOOP UNTIL IN3 = 1 ' until pushbutton press.
     IF IN3 = 1 OR IN7 =1 THEN
       PAUSE 100
     ENDIF
-  LOOP UNTIL IN3 = 0 AND in7 = 0
+  LOOP UNTIL IN3 = 0 AND IN7 = 0
 
   DEBUG "To play again, hold both ", CR, ' Play again instructions.
   "buttons down again.", CR, CR
