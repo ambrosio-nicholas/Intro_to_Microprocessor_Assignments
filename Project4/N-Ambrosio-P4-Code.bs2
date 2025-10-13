@@ -4,69 +4,75 @@
 
 ' redLED=8, greenLED=9, blueLED=10, Pot=12
 ' e=0, d=1, c=2, g=3, f=4, a=5, b=6, .=7
-' DIRL = %00000000
 
 time VAR Word
 position VAR Byte
 outBinary VAR Byte
+isBlue VAR Bit
 
 PAUSE 1000
 
-OUTL = %11111111
+OUTL = %11111111 'Set the register with the 7 seg to ouput
+OUTC = %1111     'Set the register with the rgbLED to output
 
 DO
   ' Get the potentiometer position
   HIGH 12
-  PAUSE 16 ' This pause is also the servo pause
+  PAUSE 5 ' This pause is also the servo pause
   RCTIME 12, 1, time
-  'DEBUG DEC time, " "
 
   ' Figure out which state/position we are in from 0-9
-  IF time < 3 THEN '0
-    position = 0
-    HIGH 8
-    LOW 9
-    LOW 10
-  ELSEIF time < 7 AND time > 5 THEN '1
-    position = 1
+  GOSUB findState
 
-  ELSEIF time < 12 AND time > 10 THEN '2
-    position = 2
-
-  ELSEIF time < 17 AND time > 15 THEN '3
-    position = 3
-
-  ELSEIF time < 23 AND time > 21 THEN '4
-    position = 4
-
-  ELSEIF time < 32 AND time > 30 THEN '5
-    position = 5
-
-  ELSEIF time < 37 AND time > 35 THEN '6
-    position = 6
-
-  ELSEIF time < 42 AND time > 40 THEN '7
-    position = 7
-
-  ELSEIF time < 50 AND time > 48 THEN '8
-    position = 8
-
-  ELSEIF time > 54 THEN '9
-    position = 9
-    LOW 8
-    HIGH 9
-    LOW 10
-  ENDIF
-  'DEBUG DEC position, " "
-
-
-
-  ' If it's  close to a new notch
+  ' Set it to the correct state
   LOOKUP position,[320,419,518,617,716,815,914,1013,1112,1211], time 'Find the corresponding position
-  LOOKUP position,[%01110111,%01000100,%01101011,%01101110,%01011100,%00111110,%00011111,%01100100,%01111111,%01111100], outBinary 'Find the corresponding binary for the 7-seg based on the inputs
-   '                                             01101110   01011100  00111110  00011111  01100100  01111111  01111100
+  LOOKUP position,[%01111100,%01111111,%01100100,%00011111,%00111110,%01011100,%01101110,%01101011,%01000100,%01110111], outBinary 'Find the corresponding binary for the 7-seg based on the inputs
+
   DIRL = outBinary ' Set the 7-segment display
+
   PULSOUT 14, time ' Send pulse to servo.
+
 LOOP
 
 END
+
+'-----------SubRoutines Here--------------
+
+findState:
+  IF time < 3 THEN '0
+    position = 0
+    isBlue = 0
+    DIRC = %0001 'Sets the green LED on
+  ELSEIF time < 7 AND time > 5 THEN '1
+    position = 1
+    isBlue = 1
+  ELSEIF time < 12 AND time > 10 THEN '2
+    position = 2
+    isBlue = 1
+  ELSEIF time < 17 AND time > 15 THEN '3
+    position = 3
+    isBlue = 1
+  ELSEIF time < 23 AND time > 21 THEN '4
+    position = 4
+    isBlue = 1
+  ELSEIF time < 32 AND time > 30 THEN '5
+    position = 5
+    isBlue = 1
+  ELSEIF time < 37 AND time > 35 THEN '6
+    position = 6
+    isBlue = 1
+  ELSEIF time < 42 AND time > 40 THEN '7
+    position = 7
+    isBlue = 1
+  ELSEIF time < 50 AND time > 48 THEN '8
+    position = 8
+    isBlue = 1
+  ELSEIF time > 54 THEN '9
+    position = 9
+    isBlue = 0
+    DIRC = %0010 'Sets the red LED on
+  ENDIF
+  IF isBlue = 1 THEN
+    DIRC = %0100
+  ENDIF
+RETURN
