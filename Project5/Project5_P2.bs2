@@ -1,9 +1,11 @@
-' Nicholas Ambrosio - Project 5 - Due: Oct 29, 2025
+           ' Nicholas Ambrosio - Project 5 - Due: Oct 29, 2025
 ' {$STAMP BS2}
 ' {$PBASIC 2.5}
 
 number VAR Byte
 time VAR Word
+pauseTime VAR Word
+rnd VAR Word
 outBinary VAR Byte
 buttonPause VAR Byte
 buttonPause = 150 ' The amount of time the program pauses after a button press
@@ -46,22 +48,25 @@ RETURN
 
 rollDice:
   DO
+    rnd = rnd + 1
     RANDOM number
     number = number - (10 * (number / 10)) ' Find the modulus so it's always within 0-9
-    IF number = 2 THEN
-      number = 3
-    ENDIF
     GOSUB setSevenSeg
     GOSUB checkButton
     'PAUSE 5
   LOOP UNTIL isDoublePressed = 1
-  ' Stop at a number in 2 seconds
-  FOR time = 0 TO 200
+  ' Smoothly stop at a number in 12 seconds
+  time = 1
+  pauseTime = 0
+  number = rnd
+  DO
     RANDOM number
     number = number - (10 * (number / 10)) ' Find the modulus so it's always within 0-9
     GOSUB setSevenSeg
-    'PAUSE 5
-  NEXT
+    time = time + 1
+    pauseTime = time * time
+    PAUSE time
+  LOOP UNTIL pauseTime > 20000
   ' Flash that number three times
   PAUSE 200
   DIRL = %00000000
