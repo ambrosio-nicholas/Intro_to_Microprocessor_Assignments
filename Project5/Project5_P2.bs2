@@ -1,4 +1,4 @@
-           ' Nicholas Ambrosio - Project 5 - Due: Oct 29, 2025
+' Nicholas Ambrosio - Project 5 Pt2 - Due: Oct 29, 2025
 ' {$STAMP BS2}
 ' {$PBASIC 2.5}
 
@@ -19,7 +19,7 @@ OUTL = %11111111 ' Set 7 segments to outputs
 DIRL = %01110111 ' Show 0 at the start
 
 DO
-  number = number + 1 'Change the seed based on a really quick time
+  rnd = rnd + 1 'Change the seed based on a really quick time
   GOSUB checkButton
 
   IF isPressed = 1 THEN
@@ -48,25 +48,36 @@ RETURN
 
 rollDice:
   DO
-    rnd = rnd + 1
-    RANDOM number
-    number = number - (10 * (number / 10)) ' Find the modulus so it's always within 0-9
+    RANDOM rnd
+    number = rnd // 10 ' Find the modulus so it's always within 0-9
     GOSUB setSevenSeg
     GOSUB checkButton
-    'PAUSE 5
+    PAUSE 1
   LOOP UNTIL isDoublePressed = 1
   ' Smoothly stop at a number in 12 seconds
   time = 1
   pauseTime = 0
-  number = rnd
   DO
-    RANDOM number
-    number = number - (10 * (number / 10)) ' Find the modulus so it's always within 0-9
+    RANDOM rnd
+    number = rnd // 10 ' Find the modulus so it's always within 0-9
     GOSUB setSevenSeg
     time = time + 1
-    pauseTime = time * time
-    PAUSE time
-  LOOP UNTIL pauseTime > 20000
+    IF time > 4000 THEN
+      pauseTime = 400
+    ELSEIF time > 3000 THEN
+      pauseTime = 200
+    ELSEIF time > 2000 THEN
+      pauseTime = 100
+    ELSEIF time > 1000 THEN
+      pauseTime = 50
+    ELSEIF time > 0 THEN
+      pauseTime = 10
+    ENDIF
+    DEBUG ? time
+    DEBUG ? pauseTime
+    PAUSE pauseTime
+    time = time + pauseTime
+  LOOP UNTIL time > 5000
   ' Flash that number three times
   PAUSE 200
   DIRL = %00000000
