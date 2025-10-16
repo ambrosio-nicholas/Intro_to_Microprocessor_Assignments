@@ -1,0 +1,78 @@
+' Nicholas Ambrosio - Project 5 - Due: Oct 29, 2025
+' {$STAMP BS2}
+' {$PBASIC 2.5}
+
+number VAR Byte
+time VAR Word
+outBinary VAR Byte
+buttonPause VAR Byte
+buttonPause = 150 ' The amount of time the program pauses after a button press
+isPressed VAR Bit
+isPressed = 0
+isDoublePressed VAR Bit
+isDoublePressed = 0
+pushButton PIN 10
+
+OUTL = %11111111 ' Set 7 segments to outputs
+DIRL = %01110111 ' Show 0 at the start
+
+DO
+  number = number + 1 'Change the seed based on a really quick time
+  GOSUB checkButton
+
+  IF isPressed = 1 THEN
+    GOSUB rollDice
+  ENDIF
+
+LOOP
+
+
+'------------SubRoutines-------------
+
+checkButton:
+  IF pushButton = 1 AND isPressed = 0 THEN
+    PAUSE buttonPause
+    isPressed = 1
+  ELSEIF pushButton = 1 AND isPressed = 1 THEN
+    PAUSE 10
+    isDoublePressed = 1
+  ENDIF
+RETURN
+
+setSevenSeg:
+  LOOKUP number,[%01110111,%01000100,%01101011,%01101110,%01011100,%00111110,%00011111,%01100100,%01111111,%01111100], outBinary 'Find the corresponding binary for the 7-seg based on the inputs
+  DIRL = outBinary ' Set the 7 segment display
+RETURN
+
+rollDice:
+  DO
+    RANDOM number
+    number = number - (10 * (number / 10)) ' Find the modulus so it's always within 0-9
+    GOSUB setSevenSeg
+    GOSUB checkButton
+    PAUSE 5
+  LOOP UNTIL isDoublePressed = 1
+  ' Stop at a number in 2 seconds
+  FOR time = 0 TO 200
+    RANDOM number
+    number = number - (10 * (number / 10)) ' Find the modulus so it's always within 0-9
+    GOSUB setSevenSeg
+    PAUSE 5
+  NEXT
+  ' Flash that number three times
+  PAUSE 200
+  DIRL = %00000000
+  PAUSE 200
+  GOSUB setSevenSeg
+  PAUSE 200
+  DIRL = %00000000
+  PAUSE 200
+  GOSUB setSevenSeg
+  PAUSE 200
+  DIRL = %00000000
+  PAUSE 200
+  GOSUB setSevenSeg
+  isDoublePressed = 0
+  isPressed = 0
+  number = 0
+RETURN
