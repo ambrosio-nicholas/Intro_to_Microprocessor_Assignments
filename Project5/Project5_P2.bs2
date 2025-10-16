@@ -71,10 +71,8 @@ rollDice:
     ELSEIF time > 1000 THEN
       pauseTime = 50
     ELSEIF time > 0 THEN
-      pauseTime = 10
+      pauseTime = 25
     ENDIF
-    DEBUG ? time
-    DEBUG ? pauseTime
     PAUSE pauseTime
     time = time + pauseTime
   LOOP UNTIL time > 5000
