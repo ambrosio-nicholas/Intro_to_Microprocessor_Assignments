@@ -1,0 +1,30 @@
+'{$STAMP BS2}
+'{$PBASIC 2.5}
+
+' Patterns of 7-Segment Display to create letters
+A CON %11110101
+C CON %01100011
+d CON %10010111
+F CON %01110001
+H CON %10110101
+I CON %00100001
+n CON %00010101
+P CON %11110001
+S CON %01110110
+
+space CON %00000000
+
+index VAR Byte
+
+OUTH = %00000000 ' All off to start
+DIRH = %11111111 ' All LEDs must be outputs
+
+PAUSE 1000
+
+DO
+  FOR index = 0 TO 18 ' 19 chars in message
+    LOOKUP index, [ F, I, S, H, space, C, H, I, P, S, space, A, n, d, space, d, I, P, space ], OUTH
+    DEBUG " ", DEC2 index, " ", BIN8 OUTH, CR
+    PAUSE 400 ' 400 ms between letters
+  NEXT
+LOOP
