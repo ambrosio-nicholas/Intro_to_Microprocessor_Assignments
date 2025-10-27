@@ -1,0 +1,22 @@
+' {$STAMP BS2}
+' {$PBASIC 2.5}
+valMax CON 4000
+valMin CON 100
+time VAR Word
+
+PAUSE 1000
+
+DO
+  HIGH 2
+  PAUSE 100
+  RCTIME 2, 1, time
+  time = time MAX valMax MIN valMin
+
+  DEBUG HOME, "time = ", DEC5 time
+
+  IF time > (valMax - valMin) / 4 * 3 THEN
+    DEBUG CR, "Turn light on "
+  ELSEIF time < (valMax - valMin ) / 4 THEN
+    DEBUG CR, "Turn light off"
+  ENDIF
+LOOP
