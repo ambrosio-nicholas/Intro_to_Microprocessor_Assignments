@@ -27,14 +27,15 @@ checkLightLevel:
   HIGH 15
   PAUSE 10
   RCTIME 15, 1, lightLevel
+  'DEBUG ? lightLevel
 
-  IF lightLevel > 700 AND wasBlocked = 0 THEN 'If it's dark (lightLevel is inverted like golf scores) and wasn't dark before
+  IF lightLevel > 100 AND wasBlocked = 0 THEN 'If it's dark (lightLevel is inverted like golf scores) and wasn't dark before
     counter = counter + 1
     wasBlocked = 1
     blockedTime = 0
-  ELSEIF lightLevel > 700 AND wasBlocked = 1 THEN
+  ELSEIF lightLevel > 100 AND wasBlocked = 1 THEN
     blockedTime = blockedTime + 1
-  ELSEIF lightLevel < 300 THEN
+  ELSEIF lightLevel < 100 THEN
     wasBlocked = 0
     blockedTime = 0
   ENDIF
@@ -53,10 +54,17 @@ RETURN
 emptyBin:
   position = 1200
 
-  waitTime = 10000
-  GOSUB myWait
+  GOSUB blinkLights
+
+  GOSUB blinkLights
 
   position = 270
+  OUTS = outBinary
+
+  GOSUB blinkLights
+
+  GOSUB blinkLights
+
   counter = 0
 RETURN
 
