@@ -12,10 +12,10 @@ DEBUG "Starting measurements...", CR, CR,
 "----------- -----", CR
 
 FOR eepromAddress = 0 TO 58 STEP 2
-'FOR eepromAddress = 0 TO 116 STEP 2 'For your turn
+1'FOR eepromAddress = 0 TO 116 STEP 2 'For your turn
   HIGH 2
-  'PAUSE 50
-  PAUSE 25  'For your turn
+  PAUSE 50
+  'PAUSE 25  'For your turn
   RCTIME 2, 1, time
 
   DEBUG DEC2 eepromAddress,

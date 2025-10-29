@@ -1,0 +1,95 @@
+' Nicholas Ambrosio - Project 6 - Due: Nov 5, 2025
+' {$STAMP BS2}
+' {$PBASIC 2.5}
+
+counter VAR Word
+outBinary VAR Word
+lightLevel VAR Word
+waitTime VAR Word
+timePassed VAR Word
+blockedTime VAR Word
+position VAR Word
+wasBlocked VAR Bit
+
+DIRS = %1111111111111111
+
+position = 270
+
+DO
+  GOSUB checkLightLevel
+  GOSUB checkCounter
+  GOSUB checkBlockage
+LOOP
+
+checkLightLevel:
+  GOSUB pulseMotor
+
+  HIGH 15
+  PAUSE 10
+  RCTIME 15, 1, lightLevel
+
+  IF lightLevel > 700 AND wasBlocked = 0 THEN 'If it's dark (lightLevel is inverted like golf scores) and wasn't dark before
+    counter = counter + 1
+    wasBlocked = 1
+    blockedTime = 0
+  ELSEIF lightLevel > 700 AND wasBlocked = 1 THEN
+    blockedTime = blockedTime + 1
+  ELSEIF lightLevel < 300 THEN
+    wasBlocked = 0
+    blockedTime = 0
+  ENDIF
+RETURN
+
+checkCounter:
+  LOOKUP counter, [%0001111110111111, %0001111110001001, %0001111111011110, %0001111111011011, %0001111111101001, %0001111111110011, %0001111111100111, %0001111110011001, %0001111111111111, %0001111111111001, %0000010010111111, %0000010010001001, %0000010011011110, %0000010011011011, %0000010011101001, %0000010011110011, %0000010011100111, %0000010010011001, %0000010011111111, %0000010011111001, %0010111100111111, %0010111100001001, %0010111101011110, %0010111101011011, %0010111101101001, %0010111101110011, %0010111101100111, %0010111100011001, %0010111101111111, %0010111101111001, %0010110110111111 ], outBinary
+  OUTS = outBinary
+  IF counter > 24 AND counter < 30 THEN
+    GOSUB blinkLights
+  ELSEIF counter > 29 THEN
+    GOSUB emptyBin
+  ENDIF
+RETURN
+
+emptyBin:
+  position = 1200
+
+  waitTime = 10000
+  GOSUB myWait
+
+  position = 270
+  counter = 0
+RETURN
+
+blinkLights:
+
+  OUTS = %0000000000000000
+  waitTime = 1000
+  GOSUB myWait
+  OUTS = outBinary
+  GOSUB myWait
+RETURN
+
+pulseMotor:
+  PULSOUT 14, position
+  PAUSE 20
+RETURN
+
+checkBlockage:
+  IF blockedTime > 60 THEN
+    DO
+    OUTS = %0000000000000000
+      PAUSE 100
+      OUTS = %0011011011101101
+      PAUSE 100
+      GOSUB checkLightLevel
+    LOOP UNTIL blockedTime < 60
+  ENDIF
+RETURN
+
+myWait:
+  FOR timePassed = 0 TO waitTime
+    GOSUB checkLightLevel
+    GOSUB checkBlockage
+    timePassed = timePassed + 300 + 20 ' This is increased by however long CheckLightLevel takes (RCTIME takes about 120ms) and pulseMotor (20ms)
+  NEXT
+RETURN

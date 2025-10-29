@@ -25,7 +25,7 @@ Get_Rc_Time: ' RC-time subroutine
 RETURN
 
 Delay: ' Delay subroutine.
-  PAUSE time / 3 'Replace 3 with 7 for YourrTurnPart2
+  PAUSE time / 7 'Replace 3 with 7 for YourrTurnPart2
 RETURN
 
 Update_Display: ' Display updating subroutine.
