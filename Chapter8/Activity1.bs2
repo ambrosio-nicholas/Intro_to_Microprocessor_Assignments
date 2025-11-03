@@ -1,0 +1,6 @@
+'{$STAMP BS2}
+'{$PBASIC 2.5}
+PAUSE 1000
+DEBUG "Tone sending...", CR
+FREQOUT 9, 1500, 2000
+DEBUG "Tone done."

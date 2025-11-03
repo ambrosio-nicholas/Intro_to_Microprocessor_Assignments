@@ -1,0 +1,27 @@
+'{$STAMP BS2}
+'{$PBASIC 2.5}
+character VAR Byte
+PAUSE 1000
+DEBUG "Enter a character: ", CR
+
+DO
+  DEBUGIN character
+  SELECT character
+
+  CASE "A" TO "Z"
+    DEBUG CR, "Upper case", CR
+  CASE "a" TO "z"
+    DEBUG CR, "Lower case", CR
+  CASE "0" TO "9"
+    DEBUG CR, "Digit", CR
+  CASE "!", "?", ".", ","
+    DEBUG CR, "Punctuation", CR
+  CASE "@", "#", "$", "%", "^", "&", "*", "(", ")", "_", "+"
+    DEBUG CR, "SpecialCharacter", CR
+  CASE ELSE
+    DEBUG CR, "Character not known.", CR,
+    "Try a different one."
+  ENDSELECT
+
+  DEBUG CR, "Enter another character", CR
+LOOP

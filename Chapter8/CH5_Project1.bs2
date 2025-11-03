@@ -1,0 +1,11 @@
+'{$STAMP BS2}
+'{$PBASIC 2.5}
+DEBUG "Program Running!"
+
+DO
+  IF (IN0 = 1) THEN
+    FREQOUT 9, 200, 2000 ' 2000 Hz for 200 ms
+  ELSEIF (IN14 = 1) THEN
+    FREQOUT 9, 100, 3000 ' 3000 Hz for 100 ms
+  ENDIF
+LOOP

@@ -1,0 +1,18 @@
+'{$STAMP BS2}
+'{$PBASIC 2.5}
+freq VAR Word
+
+PAUSE 1000
+DEBUG "Frequency = 2000", CR
+FREQOUT 9, 2000, 2000
+DEBUG "Frequency = 3000", CR
+FREQOUT 9, 2000, 3000
+DEBUG "Frequency = 2000 + 3000", CR
+FREQOUT 9, 2000, 2000, 3000
+
+FOR freq = 2001 TO 2005
+DEBUG "Frequency = 2000 + ", DEC freq, CR
+  FREQOUT 9, 2000, 2000, freq
+NEXT
+
+END

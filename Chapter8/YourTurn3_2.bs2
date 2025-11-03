@@ -1,0 +1,24 @@
+'{$STAMP BS2}
+'{$PBASIC 2.5}
+Notes DATA "C","C","G","G","A","A","G","F","F","E","E","D","D","C"
+Frequencies DATA Word 2093, Word 2093, Word 3136, Word 3136, Word 3520, Word 3520, Word 3136, Word 1396 * 2, Word 1396 * 2, Word 1319 * 2, Word 1319 * 2, Word 1175 * 2, Word 1175 * 2, Word 1047 * 2
+Durations DATA Word 500, Word 500, Word 500, Word 500, Word 500, Word 500, Word 1000, Word 500, Word 500, Word 500, Word 500, Word 500, Word 500, Word 1000
+index VAR Nib
+noteLetter VAR Byte
+noteFreq VAR Word
+noteDuration VAR Word
+
+PAUSE 1000
+
+DEBUG "Note Duration Frequency", CR, "---- -------- ---------", CR
+FOR index = 0 TO 13
+  READ Notes + index, noteLetter
+  DEBUG " ", noteLetter
+  READ Durations + (index * 2), Word noteDuration
+  DEBUG " ", DEC4 noteDuration
+  READ Frequencies + (index * 2), Word noteFreq
+  DEBUG " ", DEC4 noteFreq, CR
+  FREQOUT 9, noteDuration, noteFreq
+NEXT
+
+END

@@ -1,0 +1,18 @@
+'{$STAMP BS2}
+'{$PBASIC 2.5}
+duration VAR Word
+frequency VAR Word
+
+PAUSE 1000
+
+
+DEBUG "Hyperspace Different Tho...", CR
+PAUSE 100
+FOR duration = 1 TO 12 STEP 1
+  FOR frequency = 2000 TO 2700 STEP 30
+    FREQOUT 9, duration, frequency
+  NEXT
+NEXT
+
+DEBUG "Done", CR
+END

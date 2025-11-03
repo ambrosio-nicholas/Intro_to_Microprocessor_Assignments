@@ -1,0 +1,38 @@
+'{$STAMP BS2}
+'{$PBASIC 2.5}
+DEBUG "Program Running!"
+Notes DATA "C","E","E","E","D","E","F","E","E","D","D","D","C","D","E","C","Q"
+Octaves DATA 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7,7, 7, 7, 7, 7
+Durations DATA 4, 2, 4, 4, 4, 4, 2, 2, 4, 2, 4,4, 4, 4, 2, 2
+Dots DATA 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0,0, 0, 0, 1, 0
+
+BeatsPerMin CON 320
+
+index VAR Byte
+offset VAR Nib
+noteLetter VAR Byte
+noteFreq VAR Word
+noteDuration VAR Word
+noteOctave VAR Nib
+noteDot VAR Bit
+wholeNote VAR Word
+wholeNote = 60000 / BeatsPerMin * 4
+
+DO UNTIL noteLetter = "Q"
+  READ Notes + index, noteLetter
+  LOOKDOWN noteLetter, [ "C", "d", "D", "e", "E","F", "g", "G", "a", "A","b", "B", "P", "Q" ], offset
+  LOOKUP offset, [ 4186, 4435, 4699, 4978, 5274,5588, 5920, 6272, 6645, 7040,7459, 7902, 0, 0 ], noteFreq
+  READ Octaves + index, noteOctave
+  noteOctave = 8 - noteOctave
+  noteFreq = noteFreq / (DCD noteOctave)
+  READ Durations + index, noteDuration
+  noteDuration = WholeNote / noteDuration
+  READ Dots + index, noteDot
+
+  IF noteDot = 1 THEN noteDuration = noteDuration * 3 / 2
+
+  FREQOUT 9, noteDuration, noteFreq
+
+  index = index + 1
+LOOP
+END

@@ -1,0 +1,28 @@
+'{$STAMP BS2}
+'{$PBASIC 2.5}
+value VAR Word
+PAUSE 1000
+
+DEBUG "Enter a value from", CR,
+"0 to 65535: "
+
+DO
+  DEBUGIN DEC value
+
+  SELECT value
+  CASE 0, 1
+    DEBUG "Bit", CR
+    PAUSE 100
+  CASE 2 TO 15
+    DEBUG "Nib (Nibble)", CR
+    PAUSE 200
+  CASE 16 TO 255
+    DEBUG "Byte", CR
+    PAUSE 300
+  CASE 256 TO 65535
+    DEBUG "Word", CR
+    PAUSE 400
+  ENDSELECT
+
+  DEBUG CR, "Enter another value: "
+LOOP
