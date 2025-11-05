@@ -1,0 +1,138 @@
+' Nicholas Ambrosio - Project 7 - Due: Nov 12, 2025
+' {$STAMP BS2}
+' {$PBASIC 2.5}
+
+mainState VAR Byte 'State for the overall windshield wipers
+mainState = 0
+potPosition VAR Word 'Variable that hold RCTIME result for potentiometer
+pauseTime VAR Word
+pauseTime = 0
+waitTime VAR Word
+waitTime = 0
+timeWaited VAR Word
+wiperSpeed VAR Word
+wiperSpeed = 9
+
+counter VAR Word
+
+DIRL = %11111111
+
+GOSUB main
+
+END
+
+'------------------------Subroutines----------------------
+
+main:
+  DO
+    GOSUB CheckButton
+    GOSUB CheckState
+    GOSUB swipe
+    GOSUB myWait
+  LOOP
+RETURN
+
+CheckState:
+  SELECT mainState
+  CASE 0
+    'OFF
+    OUTL = %0000000 'All Off
+  CASE 1
+    ' Intermittent Wipers
+    GOSUB GetPotPosition
+  CASE 2
+    ' Medium Speed
+    OUTL = %01011110 ' Inverted U
+    waitTime = 0
+    wiperSpeed = 9
+  CASE 3
+    ' Fast Speed
+    OUTL = %00010111 ' F for Fast
+    waitTime = 0
+    wiperSpeed = 12
+  ENDSELECT
+RETURN
+
+GetPotPosition:
+  HIGH 15
+  PAUSE 2
+  RCTIME 15, 1, potPosition ' Get the potentiometer position
+  'DEBUG ? potPosition
+
+  IF potPosition > 50 THEN
+    'interState = 1
+    waitTime = 550
+    OUTL = %1001000 '1
+  ELSEIF potPosition < 50 AND potPosition > 40 THEN
+    'interState = 2
+    waitTime = 400
+    OUTL = %0111101 '2
+  ELSEIF potPosition < 40 AND potPosition > 30 THEN
+    'interState = 3
+    waitTime = 300
+    OUTL = %1101101 '3
+  ELSEIF potPosition < 20 AND potPosition > 10 THEN
+    'interState = 4
+    waitTime = 200
+    OUTL = %1001011 '4
+  ELSEIF potPosition < 10 THEN
+    'interState = 5
+    waitTime = 100
+    OUTL = %1100111 '5
+  ENDIF
+RETURN
+
+CheckButton:
+  IF IN9 = 1 AND mainState < 3 THEN
+    DO 'Wait until button is released
+    LOOP UNTIL IN9 = 0
+    mainState = mainState + 1
+    GOSUB main
+  ELSEIF IN9 = 1 AND mainState = 3 THEN
+    DO 'Wait until button is released
+    LOOP UNTIL IN9 = 0
+    mainState = 0
+    GOSUB main
+  ENDIF
+RETURN
+
+myWait:
+  'DEBUG ? waitTime
+  FOR timeWaited = 0 TO waitTime
+    GOSUB CheckButton
+    IF mainState = 1 THEN
+      GOSUB GetPotPosition
+    ELSE
+      PAUSE 1
+    ENDIF
+  NEXT
+RETURN
+
+swipe:
+  IF mainState > 0 THEN
+    FOR counter = 300 TO 950 STEP wiperSpeed
+      PULSOUT 14, counter '300 is 3 o clock and 950 is 10 o clock
+
+      IF mainState = 1 THEN
+        GOSUB GetPotPosition
+      ELSE
+        PAUSE 4
+      ENDIF
+
+      GOSUB CheckButton
+    NEXT
+    FOR counter = 950 TO 300 STEP wiperSpeed
+      PULSOUT 14, counter '300 is 3 o clock and 950 is 10 o clock
+
+      IF mainState = 1 THEN
+        GOSUB GetPotPosition
+      ELSE
+        PAUSE 3
+      ENDIF
+
+      GOSUB CheckButton
+    NEXT
+  ELSE
+    PULSOUT 14, 300 '300 is 3 o clock and 950 is 10 o clock
+  ENDIF
+RETURN
