@@ -1,0 +1,17 @@
+' {$STAMP BS2}
+' {$PBASIC 2.5}
+counter VAR Byte
+
+FOR counter = 0 TO 10
+
+  HIGH 7
+
+  PAUSE 1000
+
+  LOW 7
+
+  PAUSE 1000
+
+NEXT
+
+END

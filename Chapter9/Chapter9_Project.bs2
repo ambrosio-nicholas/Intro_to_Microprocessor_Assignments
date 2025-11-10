@@ -1,0 +1,51 @@
+' {$STAMP BS2}
+' {$PBASIC 2.5}
+counter VAR Byte
+time VAR Word
+currentPos VAR Word
+
+LOW 5
+
+FOR counter = 0 TO 127 ' Set tap to lowest position.
+  PULSOUT 11,5
+  PAUSE 1
+NEXT
+
+currentPos = 0
+GOSUB GetLightLevel
+
+DO
+  GOSUB GetLightLevel
+  IF currentPos < time THEN
+    LOW 5
+    DO
+      PULSOUT 6, 1
+      currentPos = currentPos + 1
+      GOSUB GetLightLevel
+        DEBUG ? currentPos
+        DEBUG ? time
+    LOOP UNTIL currentPos > time
+  ELSEIF currentPos > time THEN
+    HIGH 5
+    DO
+      PULSOUT 6, 1
+      currentPos = currentPos - 1
+      GOSUB GetLightLevel
+        DEBUG ? currentPos
+    LOOP UNTIL currentPos < time
+  ENDIF
+
+PAUSE 50
+
+LOOP
+
+END
+
+GetLightLevel:
+  'GET RCTIME
+  HIGH 11
+  PAUSE 10
+  RCTIME 11, 1, time
+  time = time MAX 5000 MIN 30
+  time = time / 39 ' Scale it between certain steps
+RETURN

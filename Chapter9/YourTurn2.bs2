@@ -1,0 +1,14 @@
+' {$STAMP BS2}
+' {$PBASIC 2.5}
+DEBUG "Program Running!"
+counter VAR Byte
+LOW 5
+
+DO
+  FOR counter = 0 TO 127
+    PULSOUT 6, 1
+    PAUSE 5
+  NEXT
+
+  TOGGLE 5
+LOOP
