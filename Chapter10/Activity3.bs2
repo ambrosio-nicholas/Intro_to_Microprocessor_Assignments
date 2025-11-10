@@ -23,11 +23,15 @@ DO ' Main loop
   SELECT state ' Evaluate state case by case
   CASE NotArmed ' If state = not armed
     ' To-do: bicolor LED green
+    HIGH 15
+    LOW 14
     GOSUB Prompt_to_Arm ' call Prompt_to_Arm
   CASE Arming ' If state = Arming
     GOSUB Alarm_Arming ' call Alarm_Arming
   CASE Armed ' If state = Armed
     ' To-do: bicolor LED red
+    HIGH 14
+    LOW 15
     GOSUB Check_Sensors ' Call Check_Sensors
     GOSUB Prompt_to_Disarm ' Call Prompt_to_Disarm
   CASE Triggered ' If state = Triggered
@@ -54,7 +58,16 @@ CR, "You have"
 FOR seconds = 8 TO 0 ' Count down seconds left
 DEBUG CRSRX, 9, DEC seconds, CLREOL, ' Display time remaining
 " seconds left..."
-PAUSE 1000 ' Wait 1 second
+GOSUB checkPot
+GOSUB checkPot
+GOSUB checkPot
+GOSUB checkPot
+GOSUB checkPot 'Each checkPot takes .1 seconds
+GOSUB checkPot
+GOSUB checkPot
+GOSUB checkPot
+GOSUB checkPot
+GOSUB checkPot
 NEXT ' Repeat count down
 state = Armed ' Set state variable to Armed
 RETURN ' Return from Alarm_Arming
@@ -71,7 +84,7 @@ DO ' Alarm triggered loop
 DEBUG CLS, "Alarm triggered!!!" ' Display warning
 FOR counter = 1 TO 15 ' Sound 15 alarm tones
 FREQOUT 6, 100, 4500
-PAUSE 100
+GOSUB checkPot
 NEXT
 FOR seconds = 1 TO 6 ' 3 sec. for user to disarm
 IF state <> triggered THEN EXIT
@@ -99,12 +112,15 @@ ENDSELECT ' Done with evaluating char
 RETURN ' Return from Process_Char
 ' -----[ Subroutine - Check_Sensors ]--------------------------------------
 Check_Sensors:
-' To-do: Check if Potentiometer is over threshold value.
-' If yes, then, trigger alarm
-IF IN0 = 0 THEN state = Triggered ' Btn released? Trigger alarm.
+  ' To-do: Check if Potentiometer is over threshold value.
+  ' If yes, then, trigger alarm
+  IF IN0 = 0 THEN state = Triggered ' Btn released? Trigger alarm.
+  GOSUB checkPot
+  IF time > 2 THEN state = Triggered 'Pot not closed? Trigger Alarm
+RETURN ' Return from Check_Sensors
+
+checkPot:
   HIGH 11
   PAUSE 100
   RCTIME 11, 1, time
-  DEBUG HOME, "time = ", DEC5 time
-IF time > 2 THEN state = Triggered 'Pot not closed? Trigger Alarm
-RETURN ' Return from Check_Sensors
+RETURN
