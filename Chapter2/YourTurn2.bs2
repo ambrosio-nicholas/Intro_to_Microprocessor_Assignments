@@ -1,0 +1,29 @@
+' {$STAMP BS2}
+' {$PBASIC 2.5}
+counter VAR Byte
+time VAR Word
+
+  FOR counter = 1 TO 3
+    HIGH 15
+    LOW 14
+    DEBUG "Green"
+    PAUSE 500
+
+    LOW 15
+    HIGH 14
+    DEBUG "Red"
+    PAUSE 500
+  NEXT
+
+DEBUG "Tone sending...", CR
+FREQOUT 6, 1500, 2000
+DEBUG "Tone done.", HOME
+
+DO
+  DEBUG ? IN0
+  PAUSE 250
+  HIGH 11
+  PAUSE 100
+  RCTIME 11, 1, time
+  DEBUG "time = ", DEC5 time
+LOOP

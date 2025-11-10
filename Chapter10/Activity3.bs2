@@ -1,0 +1,110 @@
+' {$STAMP BS2} ' Target = BASIC Stamp 2
+' {$PBASIC 2.5} ' Language = PBASIC 2.5
+' -----[ Constants ]-------------------------------------------------------
+NotArmed CON 0 ' Alarm system states
+Arming CON 1
+Armed CON 3
+Triggered CON 4
+
+' -----[ Variables ]-------------------------------------------------------
+seconds VAR Word ' Stores second count
+counter VAR Byte ' For counting
+char VAR Byte ' Stores characters
+state VAR Nib ' Stores alarm system state
+time VAR Word ' Stores RCTIME return value
+
+' -----[ Initialization ]--------------------------------------------------
+PAUSE 1000 ' Wait 1 second
+DEBUG "Program running..." ' Display running message
+state = NotArmed ' Initialize alarm state
+
+' -----[ Main Routine ]----------------------------------------------------
+DO ' Main loop
+  SELECT state ' Evaluate state case by case
+  CASE NotArmed ' If state = not armed
+    ' To-do: bicolor LED green
+    GOSUB Prompt_to_Arm ' call Prompt_to_Arm
+  CASE Arming ' If state = Arming
+    GOSUB Alarm_Arming ' call Alarm_Arming
+  CASE Armed ' If state = Armed
+    ' To-do: bicolor LED red
+    GOSUB Check_Sensors ' Call Check_Sensors
+    GOSUB Prompt_to_Disarm ' Call Prompt_to_Disarm
+  CASE Triggered ' If state = Triggered
+    GOSUB Alarm_Triggered ' Call Alarm_Triggered
+  ENDSELECT ' Done evaluating char
+LOOP ' Repeat main loop
+
+' =====[ Subroutines ]=====================================================
+
+' -----[ Subroutine - Prompt_To_Arm ]--------------------------------------
+Prompt_to_Arm:
+DEBUG CLS, "Type A to arm", CR, ">" ' Display message
+GOSUB Get_User_Input ' Call Get_User_Input
+RETURN ' Return from Prompt_to_Arm
+' -----[ Subroutine - Prompt_to_Disarm ]-----------------------------------
+Prompt_to_Disarm:
+DEBUG CLS, "Type D to disarm", CR, ">" ' Display message
+GOSUB Get_User_Input ' Call Get_User_Input
+RETURN ' Return from Prompt_to_Disarm
+' -----[ Subroutine - Alarm_Arming ]---------------------------------------
+Alarm_Arming:
+DEBUG CLS, "Close the cabinet.", ' Warn user to secure cabinet
+CR, "You have"
+FOR seconds = 8 TO 0 ' Count down seconds left
+DEBUG CRSRX, 9, DEC seconds, CLREOL, ' Display time remaining
+" seconds left..."
+PAUSE 1000 ' Wait 1 second
+NEXT ' Repeat count down
+state = Armed ' Set state variable to Armed
+RETURN ' Return from Alarm_Arming
+' -----[ Subroutine - Alarm_Armed ]----------------------------------------
+Alarm_Armed:
+DO ' Armed loop
+GOSUB Prompt_To_disarm ' Check for user input
+GOSUB Check_Sensors ' Check sensors
+LOOP UNTIL state <> Armed ' Repeat until state not armed
+RETURN ' Return from Alarm_Armed
+' -----[ Subroutine - Alarm_Triggered ]------------------------------------
+Alarm_Triggered:
+DO ' Alarm triggered loop
+DEBUG CLS, "Alarm triggered!!!" ' Display warning
+FOR counter = 1 TO 15 ' Sound 15 alarm tones
+FREQOUT 6, 100, 4500
+PAUSE 100
+NEXT
+FOR seconds = 1 TO 6 ' 3 sec. for user to disarm
+IF state <> triggered THEN EXIT
+GOSUB Prompt_to_Disarm
+NEXT
+LOOP UNTIL state <> triggered ' Repeat until disarmed
+' -----[ Subroutine - Get_User_Input ]-------------------------------------
+Get_User_Input:
+char = 0 ' Clear char variable
+SERIN 16, 84, 500, Timeout_Label, [char] ' Wait 0.5 sec. for key press
+GOSUB Process_Char ' If key, call Process_Char
+Timeout_Label: ' If no key, skip call
+RETURN ' Return from Get_User_Input
+' -----[ Subroutine - Process_Char ]---------------------------------------
+Process_Char:
+SELECT char ' Evaluate char case by case
+CASE "A", "a" ' If "A" or "a"
+state = Arming ' Change state var to Arming
+CASE "D", "d" ' Else if "D" or "d"
+state = NotArmed ' Change state var to NotArmed
+CASE ELSE ' else if no "A", "a", "D", "d"
+DEBUG "Wrong character, try again" ' Display error message
+PAUSE 2000 ' Give user 2 sec. to read
+ENDSELECT ' Done with evaluating char
+RETURN ' Return from Process_Char
+' -----[ Subroutine - Check_Sensors ]--------------------------------------
+Check_Sensors:
+' To-do: Check if Potentiometer is over threshold value.
+' If yes, then, trigger alarm
+IF IN0 = 0 THEN state = Triggered ' Btn released? Trigger alarm.
+  HIGH 11
+  PAUSE 100
+  RCTIME 11, 1, time
+  DEBUG HOME, "time = ", DEC5 time
+IF time > 2 THEN state = Triggered 'Pot not closed? Trigger Alarm
+RETURN ' Return from Check_Sensors

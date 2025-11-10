@@ -1,0 +1,10 @@
+' {$STAMP BS2}
+' {$PBASIC 2.5}
+time VAR Word
+PAUSE 1000
+DO
+  HIGH 11
+  PAUSE 100
+  RCTIME 11, 1, time
+  DEBUG HOME, "time = ", DEC5 time
+LOOP
