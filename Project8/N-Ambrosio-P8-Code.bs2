@@ -1,0 +1,143 @@
+' Nicholas Ambrosio - Project 8 - Due: Nov 19, 2025
+' {$STAMP BS2}
+' {$PBASIC 2.5}
+
+outBinary VAR Byte 'Binary sequence for 7 segment diplay outputs
+currentTime VAR Word
+firstDigit VAR Byte
+secondDigit VAR Byte
+
+minute VAR Byte
+tensPlace VAR Byte
+onesPlace VAR Byte
+
+timeFactor VAR Byte 'The speed at which time moves 1 is normal, 10 is 10x faster
+timeFactor = 1
+time VAR Word
+time = 299    'Time the timer will go from in second (4 mins 59 seconds = 299 seconds)
+
+start VAR Bit
+myPause VAR Bit
+reset VAR Bit
+
+counter VAR Word 'Variable used to mark how much time has passed while the 7 segments flicker
+
+' IN 14 = Left Button START/PAUSE
+' IN 15 = Right Button RESET
+' IN 13 1s 7 Segment
+' IN 12 10s 7 Segment
+' 11 RED
+' 10 GREEN
+' 9 BLUE
+' 8 YELLOW
+
+DIRL = %11111111
+currentTime = time
+
+main:
+
+  'Initialize the alarm clock
+  GOSUB CalculateNumbers
+  GOSUB MinuteLights
+
+  DO 'Wait for the user to turn on the thing
+    GOSUB checkButtons
+    GOSUB UpdateDisplays
+  LOOP UNTIL start = 1
+
+  GOSUB CountDown
+
+END
+
+'-------------Subroutines-------------------
+
+UpdateDisplays:
+  FOR counter = 0 TO 800 STEP (10 * timeFactor) 'Adjust the 0 TO # depending on how long the GOSUBS add to the delays
+    ' Update tens
+    LOW 12
+    HIGH 13
+    LOOKUP tensPlace, [%01111110, %01001000, %00111101, %01101101, %01001011, %01100111, %01110011, %01001100, %01111111, %01001111], outBinary
+    OUTL = outBinary
+    GOSUB checkButtons
+    OUTL = %00000000
+    ' Update ones
+    LOW 13
+    HIGH 12
+    LOOKUP onesPlace, [%01111110, %01001000, %00111101, %01101101, %01001011, %01100111, %01110011, %01001100, %01111111, %01001111], outBinary
+    OUTL = outBinary
+    GOSUB checkButtons
+    OUTL = %00000000
+  NEXT
+RETURN
+
+CountDown:
+  FOR currentTime = time TO 0
+    'Calculate the different parts of the time display
+    GOSUB CalculateNumbers
+    'Update the Minut LEDS
+    GOSUB MinuteLights
+    'Update the 7 Segments
+    GOSUB UpdateDisplays
+  NEXT
+  'Flash 0
+  LOW 13
+  LOW 12
+  DO
+    OUTL = %00000000
+    PAUSE 250
+    OUTL = %01111110
+    PAUSE 250
+  LOOP
+RETURN
+
+CalculateNumbers:
+  minute = currentTime / 60
+  tensPlace = (currentTime // 60) / 10
+  onesPlace = currentTime // 10
+RETURN
+
+CheckButtons:
+  IF IN14 = 1 AND myPause = 0 AND start = 0 THEN
+    start = 1
+  ELSEIF IN14 = 1 AND start = 1 THEN
+    myPause = 1
+    GOSUB pauseRoutine
+  ELSEIF IN15 = 1 THEN
+    reset = 1
+  ENDIF
+RETURN
+
+pauseRoutine:
+
+
+RETURN
+
+MinuteLights:
+  SELECT minute
+  CASE 3:
+    LOW 8
+    HIGH 9
+    HIGH 10
+    HIGH 11
+  CASE 2:
+    LOW 8
+    LOW 9
+    HIGH 10
+    HIGH 11
+  CASE 1:
+    LOW 8
+    LOW 9
+    LOW 10
+    HIGH 11
+  CASE 0:
+    LOW 8
+    LOW 9
+    LOW 10
+    LOW 11
+  CASE ELSE:
+    HIGH 8
+    HIGH 9
+    HIGH 10
+    HIGH 11
+  ENDSELECT
+RETURN
