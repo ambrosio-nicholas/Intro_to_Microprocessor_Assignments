@@ -16,9 +16,13 @@ timeFactor = 1
 time VAR Word
 time = 299    'Time the timer will go from in second (4 mins 59 seconds = 299 seconds)
 
+sleepTime VAR Word
+sleepTimeMax VAR Word
+sleepTimeFactor VAR Byte
+sleepTimeFactor = 1 'If you want the sleep mode to happen faster, bump this guy up
+
 start VAR Bit
-myPause VAR Bit
-reset VAR Bit
+isPaused VAR Bit
 
 counter VAR Word 'Variable used to mark how much time has passed while the 7 segments flicker
 
@@ -32,17 +36,20 @@ counter VAR Word 'Variable used to mark how much time has passed while the 7 seg
 ' 8 YELLOW
 
 DIRL = %11111111
-currentTime = time
 
 main:
-
+  'Initialize some variables
+  start = 0
+  isPaused = 0
   'Initialize the alarm clock
+  currentTime = time
   GOSUB CalculateNumbers
   GOSUB MinuteLights
 
-  DO 'Wait for the user to turn on the thing
+  sleepTime = 0 'Reset the sleep counter before a possible idle moment
+  DO 'Wait for the user to start the clock
     GOSUB checkButtons
-    GOSUB UpdateDisplays
+    GOSUB SimpleUpdateDisplays 'Keep the numbers fresh
   LOOP UNTIL start = 1
 
   GOSUB CountDown
@@ -52,7 +59,7 @@ END
 '-------------Subroutines-------------------
 
 UpdateDisplays:
-  FOR counter = 0 TO 800 STEP (10 * timeFactor) 'Adjust the 0 TO # depending on how long the GOSUBS add to the delays
+  FOR counter = 0 TO 810 STEP (10 * timeFactor) 'Adjust the 0 TO # depending on how long the GOSUBS add to the delays
     ' Update tens
     LOW 12
     HIGH 13
@@ -82,11 +89,18 @@ CountDown:
   'Flash 0
   LOW 13
   LOW 12
+  sleepTime = 0
   DO
     OUTL = %00000000
-    PAUSE 250
+    FOR counter = 0 TO 250
+      IF IN15 = 1 THEN GOSUB main
+    NEXT
     OUTL = %01111110
-    PAUSE 250
+    FOR counter = 0 TO 250
+      IF IN15 = 1 THEN GOSUB main
+    NEXT
+    sleepTime = sleepTime + (800 * sleepTimeFactor) 'You may want the user to have more time than usual to notice the alarm went off until it goes to sleep
+    IF sleepTime > 10000 THEN GOSUB sleepMode
   LOOP
 RETURN
 
@@ -97,19 +111,40 @@ CalculateNumbers:
 RETURN
 
 CheckButtons:
-  IF IN14 = 1 AND myPause = 0 AND start = 0 THEN
+  IF IN14 = 1 AND start = 0 THEN
+    'DEBUG "Start "
+    DO 'Button Debounce
+      GOSUB SimpleUpdateDisplays 'Keep the numbers fresh
+    LOOP UNTIL IN14 = 0
     start = 1
-  ELSEIF IN14 = 1 AND start = 1 THEN
-    myPause = 1
+  ELSEIF IN14 = 1 AND start = 1 AND isPaused = 0 THEN
+    DO 'Button Debounce
+      GOSUB SimpleUpdateDisplays 'Keep the numbers fresh
+    LOOP UNTIL IN14 = 0
+    'DEBUG "Pause "
+    isPaused = 1
     GOSUB pauseRoutine
   ELSEIF IN15 = 1 THEN
-    reset = 1
+    'DEBUG "Reset "
+    DO 'Button Debounce
+      GOSUB SimpleUpdateDisplays 'Keep the numbers fresh
+    LOOP UNTIL IN15 = 0
+    'Reset
+    GOSUB main
   ENDIF
 RETURN
 
 pauseRoutine:
-
-
+  sleepTime = 0 'Reset the sleep counter before a possible idle moment
+  'Wait until sleep or unpaused
+  DO
+    GOSUB SimpleUpdateDisplays 'Keep the numbers fresh
+    IF IN15 = 1 THEN GOSUB main
+  LOOP UNTIL IN14 = 1 'Wait for pause button to be pressed again
+  DO 'Button Debounce
+    GOSUB SimpleUpdateDisplays 'Keep the numbers fresh
+  LOOP UNTIL IN14 = 0
+  isPaused = 0
 RETURN
 
 MinuteLights:
@@ -140,4 +175,41 @@ MinuteLights:
     HIGH 10
     HIGH 11
   ENDSELECT
+RETURN
+
+SimpleUpdateDisplays:
+' Update tens
+  LOW 12
+  HIGH 13
+  LOOKUP tensPlace, [%01111110, %01001000, %00111101, %01101101, %01001011, %01100111, %01110011, %01001100, %01111111, %01001111], outBinary
+  OUTL = outBinary
+  PAUSE 3
+  OUTL = %00000000
+  ' Update ones
+  LOW 13
+  HIGH 12
+  LOOKUP onesPlace, [%01111110, %01001000, %00111101, %01101101, %01001011, %01100111, %01110011, %01001100, %01111111, %01001111], outBinary
+  OUTL = outBinary
+  PAUSE 3
+  OUTL = %00000000
+
+  sleepTime = sleepTime + (25 * sleepTimeFactor) 'Adjust this number to get wanted time (25
+  'DEBUG ? sleepTime
+  IF sleepTime > 10000 THEN GOSUB sleepMode
+
+RETURN
+
+sleepMode:
+  'Turn off everything
+  LOW 13
+  LOW 12
+  OUTL = %00000000
+  LOW 11
+  LOW 10
+  LOW 9
+  LOW 8
+
+  DO
+  IF IN15 = 1 THEN GOSUB main 'Wake up if reset is pressed
+  LOOP
 RETURN
