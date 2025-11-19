@@ -1,0 +1,101 @@
+' Nicholas Ambrosio - Project 9 - Due: Nov 24, 2025
+' {$STAMP BS2}
+' {$PBASIC 2.5}
+
+' Need 6 different sequences
+' At the start of a sequence, the number will flahs 3 times before it starts for the first time
+' It should do the sequence 3 times before going onto the next one
+' Restart it all again
+
+frequency VAR Word
+noteDuration VAR Word
+masterIndex VAR Word 'This will keep track of what part of the light show and song is to be played
+i VAR Nib 'This keeps track of how many times the sequence has been played
+j VAR Nib 'This keeps track of waht sequence we're on
+outBinary VAR Byte ' This is the output for a 7 segment display
+
+DIRL = %11111111
+HIGH 7 'Turn the 7 segment display off
+
+'Whole, Half, and Qauter Notes
+H CON 1500
+W CON 750
+Q CON 375
+'Different notes for on octave
+C CON 1046
+Cs CON 1109
+D CON 1175
+Ds CON 1244
+E CON 1319
+F CON 1396
+Fs CON 1480
+G CON 1568
+Gs CON 1661
+A CON 1760
+As CON 1865
+B CON 1976
+C2 CON 2093
+
+DO
+  OUTL = %10000000
+  OUTH = %00000000
+
+  FOR j = 0 TO 5
+    'Flash the sequence number 3 time
+    GOSUB flashNumber
+
+    'Play the sequence 3 times
+    FOR i = 0 TO 2
+    masterIndex = 0
+      DO
+        'Load the song data
+        'Load the lightshow data
+        GOSUB loadShow
+        'Play the note (unless its the exit code!)
+        IF frequency > 123 THEN FREQOUT 15, noteDuration, frequency
+        'Move on to the next note
+        masterIndex = masterIndex + 1
+      LOOP UNTIL frequency = 123 '123 will be the exit code for a song
+    NEXT
+  NEXT
+LOOP
+
+
+flashNumber:
+    LOOKUP j, [%01001000, %00111101, %01101101, %01001011, %01100111, %01110011], outBinary
+    OUTL = outBinary
+    LOW 7
+    PAUSE 250
+    HIGH 7
+    PAUSE 250
+    LOW 7
+    PAUSE 250
+    HIGH 7
+    PAUSE 250
+    LOW 7
+    PAUSE 250
+    HIGH 7
+    OUTL = %10000000
+    OUTH = %00000000
+RETURN
+
+loadShow:
+  SELECT j
+
+  CASE 0:
+      LOOKUP masterIndex, [C,D,E,G,D,E,C,C,E,G,A,C2,B,G,E,F,E,D,C,D,E,G,D,E,C,E,G,A,G,E,D,D,C, 123], frequency
+      LOOKUP masterIndex, [Q,Q,Q,W,Q,Q,W,W,Q,Q,Q,Q ,Q,Q,Q,Q,Q,W,Q,Q,Q,W,Q,Q,W,Q,Q,W,Q,Q,W,W,Q], noteDuration
+  CASE 1:
+      LOOKUP masterIndex, [C2,B,A,G,F,G,A,C2,B,A,G,F,E,A,G,F,E,D,E,F,A,Gs,F,E,D,C,Cs,D,A,A,C2,B,G,Gs,A,C,C,C,C,C, 123], frequency
+      LOOKUP masterIndex, [W ,Q,Q,Q,Q,Q,Q,W ,Q,Q,Q,Q,W,Q,Q,Q,Q,Q,Q,Q,Q,Q ,Q,Q,Q,W,Q ,Q,Q,W,Q ,Q,W,Q ,Q,Q,W,Q,Q,W], noteDuration
+  CASE 2:
+      LOOKUP masterIndex, [E,E,F,G,G,F,E,D,C,C,D,E,E,D,D,E,E,F,G,G,F,E,D,C,C,D,E,D,C,C, 123], frequency
+      LOOKUP masterIndex, [Q,Q,Q,Q,Q,Q,Q,Q,Q,Q,Q,Q,Q,Q,W,Q,Q,Q,Q,Q,Q,Q,Q,Q,Q,Q,Q,Q,Q,W], noteDuration
+  CASE 3:
+       DEBUG "Case 3"
+  CASE 4:
+       DEBUG "Case 4"
+  CASE 5:
+       DEBUG "Case 5"
+  ENDSELECT
+RETURN

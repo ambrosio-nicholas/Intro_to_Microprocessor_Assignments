@@ -12,9 +12,9 @@ tensPlace VAR Byte
 onesPlace VAR Byte
 
 timeFactor VAR Byte 'The speed at which time moves 1 is normal, 10 is 10x faster
-timeFactor = 1
+timeFactor = 100
 time VAR Word
-time = 299    'Time the timer will go from in second (4 mins 59 seconds = 299 seconds)
+time = 80    'Time the timer will go from in second (4 mins 59 seconds = 299 seconds)
 
 sleepTime VAR Word
 sleepTimeMax VAR Word
@@ -124,7 +124,7 @@ CheckButtons:
     'DEBUG "Pause "
     isPaused = 1
     GOSUB pauseRoutine
-  ELSEIF IN15 = 1 THEN
+  ELSEIF IN15 = 1 AND isPaused = 1 THEN
     'DEBUG "Reset "
     DO 'Button Debounce
       GOSUB SimpleUpdateDisplays 'Keep the numbers fresh
