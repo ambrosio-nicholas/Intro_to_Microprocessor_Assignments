@@ -12,10 +12,10 @@ noteDuration VAR Word
 masterIndex VAR Word 'This will keep track of what part of the light show and song is to be played
 i VAR Nib 'This keeps track of how many times the sequence has been played
 j VAR Nib 'This keeps track of waht sequence we're on
-outBinary VAR Byte ' This is the output for a 7 segment display
+outBinary VAR Word ' This is the output for a 7 segment display
 
-DIRL = %11111111
-HIGH 7 'Turn the 7 segment display off
+DIRS = %1111111111111111
+OUTS = %0000000010000000 'Turn the 7 segment display off
 
 'Whole, Half, and Qauter Notes
 L CON 1200
@@ -50,33 +50,34 @@ B_2 CON 3952
 C3 CON 4186
 
 DO
-  OUTL = %10000000
-  OUTH = %00000000
 
   FOR j = 0 TO 5
     'Flash the sequence number 3 time
     GOSUB flashNumber
 
     'Play the sequence 3 times
-    FOR i = 0 TO 1
+    'FOR i = 0 TO 2
     masterIndex = 0
       DO
         'Load the song data
         'Load the lightshow data
         GOSUB loadShow
+        'Change the LED
+        DIRS = %1111111111111111
+        OUTS = outBinary
         'Play the note (unless its the exit code!)
         IF frequency > 123 THEN FREQOUT 15, noteDuration, frequency
         'Move on to the next note
         masterIndex = masterIndex + 1
       LOOP UNTIL frequency = 123 '123 will be the exit code for a song
-    NEXT
+    'NEXT
   NEXT
 LOOP
 
 
 flashNumber:
-    LOOKUP j, [%01001000, %00111101, %01101101, %01001011, %01100111, %01110011], outBinary
-    OUTL = outBinary
+    LOOKUP j, [%0000000001001000, %0000000000111101, %0000000001101101, %0000000001001011, %0000000001100111, %0000000001110011], outBinary
+    OUTS = outBinary
     LOW 7
     PAUSE 350
     HIGH 7
@@ -88,25 +89,28 @@ flashNumber:
     LOW 7
     PAUSE 350
     HIGH 7
-    OUTL = %10000000
-    OUTH = %00000000
+    OUTS = %0000000010000000
 RETURN
 
 loadShow:
   SELECT j
 
-  CASE 0:
+  CASE 3:
       LOOKUP masterIndex, [C,D,E,G,D,E,C,C,E,G,A,C2,B,G,E,F,E,D,C,D,E,G,D,E,C,E,G,A,G,E,D,C,D,C, 123], frequency 'lotr
       LOOKUP masterIndex, [W,W,W,H,W,W,H,H,W,W,W,W ,W,W,W,Q,Q,H,W,W,W,H,W,W,H,W,W,H,W,W,H,Q,Q,L], noteDuration
+      LOOKUP (masterIndex // 6), [%0000001110000001,%0100011111000011,%0000110011100110,%0101100010111100,%0001000010011000,%0100000010000000], outBinary
   CASE 1:
-      LOOKUP masterIndex, [C2,B,A,G,F,G,A,C2,B,A,G,F,E,A,G,F,E,D,E,F,A,Gs,F,E,D,C,Cs,D,A,A,C2,B,G,Gs,A,C,C,C,C,C, 123], frequency 'fly me to the moon
-      LOOKUP masterIndex, [H ,Q,W,W,W,W,W,W ,W,W,W,W,H,W,Q,W,W,W,W,W,W,W ,W,W,W,H,W ,W,W,H,W ,W,H,W ,W,W,H,W,W,H], noteDuration
+      LOOKUP masterIndex, [C2,B,A,G,F,G,A,C2,B,A,G,F,E,A,G,F,E,D,E,F,A,Gs,F,E,D,C,Cs,D,A,A,C2,B,G,Gs,A,C,C,C,C,C,C2, 123], frequency 'fly me to the moon
+      LOOKUP masterIndex, [H ,Q,W,W,W,W,W,W ,W,W,W,W,H,W,Q,W,W,W,W,W,W,W ,W,W,W,H,W ,W,W,H,W ,W,H,W ,W,W,H,W,W,H,L ], noteDuration
+      LOOKUP (masterIndex // 14), [%0100000010000000,%0000000010000001,%0000000010000011,%0000000010000111,%0000000010001111,%0000000110001111,%0001000110001111,%0001100110001111,%0001110110001111,%0001111110001111,%0001111110011111,%0001111110111111,%0101111111111111,%0100101110100101], outBinary
   CASE 2:
       LOOKUP masterIndex, [E,E,F,G,G,F,E,D,C,C,D,E,E,D,D,E,E,F,G,G,F,E,D,C,C,D,E,D,C,C, 123], frequency  'ode to joy
       LOOKUP masterIndex, [W,W,W,W,W,W,W,W,W,W,W,W,W,W,H,W,W,W,W,W,W,W,W,W,W,W,W,W,W,H], noteDuration
-  CASE 3:
+      LOOKUP (masterIndex // 16), [%0000000010000001,%0000000010000011,%0000000010000111,%0100000010001111,%0000001010001111,%0000011010001111,%0000111010001111,%0101111010001111,%0001111010011111,%0001111010111111,%0001111011111111,%0101111111111111,%0001111111110000,%0000000111110000,%0100000010000000, %000111111111111,%0100000100000000], outBinary
+  CASE 0:
       LOOKUP masterIndex, [E2,Fs2,G2,A2,G2,Fs2,E2,B,G,A,B,G,B,Fs,B,G,B,E, 123], frequency 'eleanor rigby
       LOOKUP masterIndex, [H ,Q  ,Q ,Q ,W ,W  ,W ,W,W,Q,Q,Q,Q,Q ,Q,Q,Q,H], noteDuration
+      LOOKUP masterIndex, [%0100001010010001,%0000011010110011,%0000111011110111,%0001111111111111,%0100000010000000,%0101111111111111,%0001111111110000,%0000000111110000,%0100000010000000,%0000000010000001,%0100000010001001,%0000001010001001,%0101001010001001,%0001001010101001,%0101001011101001,%0001001011101111,%0101111011101111,%0001111111111111], outBinary
   CASE 4:
       LOOKUP masterIndex, [G,G,G,As,As,C2,C2,Gs,C2,DS2,As,As,G,F,Ds,G,Gs,As,Gs,F,Ds, 123], frequency 'o holy night
       LOOKUP masterIndex, [H,W,W,H ,W, W,W,W,W ,W, H  ,H ,W, W,W,H ,W,W ,H ,W ,W,L], noteDuration
