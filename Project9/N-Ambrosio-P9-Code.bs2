@@ -18,9 +18,10 @@ DIRL = %11111111
 HIGH 7 'Turn the 7 segment display off
 
 'Whole, Half, and Qauter Notes
-H CON 1500
-W CON 750
-Q CON 375
+L CON 1200
+H CON 800
+W CON 375
+Q CON 187
 'Different notes for on octave
 C CON 1046
 Cs CON 1109
@@ -35,6 +36,18 @@ A CON 1760
 As CON 1865
 B CON 1976
 C2 CON 2093
+Cs2 CON 2218
+D2 CON 2350
+Ds2 CON 2488
+E2 CON 2638
+F2 CON 2792
+Fs2 CON 2960
+G2 CON 3136
+Gs2 CON 3322
+A2 CON 3520
+As2 CON 3730
+B_2 CON 3952
+C3 CON 4186
 
 DO
   OUTL = %10000000
@@ -45,7 +58,7 @@ DO
     GOSUB flashNumber
 
     'Play the sequence 3 times
-    FOR i = 0 TO 2
+    FOR i = 0 TO 1
     masterIndex = 0
       DO
         'Load the song data
@@ -65,15 +78,15 @@ flashNumber:
     LOOKUP j, [%01001000, %00111101, %01101101, %01001011, %01100111, %01110011], outBinary
     OUTL = outBinary
     LOW 7
-    PAUSE 250
+    PAUSE 350
     HIGH 7
-    PAUSE 250
+    PAUSE 350
     LOW 7
-    PAUSE 250
+    PAUSE 350
     HIGH 7
-    PAUSE 250
+    PAUSE 350
     LOW 7
-    PAUSE 250
+    PAUSE 350
     HIGH 7
     OUTL = %10000000
     OUTH = %00000000
@@ -83,19 +96,22 @@ loadShow:
   SELECT j
 
   CASE 0:
-      LOOKUP masterIndex, [C,D,E,G,D,E,C,C,E,G,A,C2,B,G,E,F,E,D,C,D,E,G,D,E,C,E,G,A,G,E,D,D,C, 123], frequency
-      LOOKUP masterIndex, [Q,Q,Q,W,Q,Q,W,W,Q,Q,Q,Q ,Q,Q,Q,Q,Q,W,Q,Q,Q,W,Q,Q,W,Q,Q,W,Q,Q,W,W,Q], noteDuration
+      LOOKUP masterIndex, [C,D,E,G,D,E,C,C,E,G,A,C2,B,G,E,F,E,D,C,D,E,G,D,E,C,E,G,A,G,E,D,C,D,C, 123], frequency 'lotr
+      LOOKUP masterIndex, [W,W,W,H,W,W,H,H,W,W,W,W ,W,W,W,Q,Q,H,W,W,W,H,W,W,H,W,W,H,W,W,H,Q,Q,L], noteDuration
   CASE 1:
-      LOOKUP masterIndex, [C2,B,A,G,F,G,A,C2,B,A,G,F,E,A,G,F,E,D,E,F,A,Gs,F,E,D,C,Cs,D,A,A,C2,B,G,Gs,A,C,C,C,C,C, 123], frequency
-      LOOKUP masterIndex, [W ,Q,Q,Q,Q,Q,Q,W ,Q,Q,Q,Q,W,Q,Q,Q,Q,Q,Q,Q,Q,Q ,Q,Q,Q,W,Q ,Q,Q,W,Q ,Q,W,Q ,Q,Q,W,Q,Q,W], noteDuration
+      LOOKUP masterIndex, [C2,B,A,G,F,G,A,C2,B,A,G,F,E,A,G,F,E,D,E,F,A,Gs,F,E,D,C,Cs,D,A,A,C2,B,G,Gs,A,C,C,C,C,C, 123], frequency 'fly me to the moon
+      LOOKUP masterIndex, [H ,Q,W,W,W,W,W,W ,W,W,W,W,H,W,Q,W,W,W,W,W,W,W ,W,W,W,H,W ,W,W,H,W ,W,H,W ,W,W,H,W,W,H], noteDuration
   CASE 2:
-      LOOKUP masterIndex, [E,E,F,G,G,F,E,D,C,C,D,E,E,D,D,E,E,F,G,G,F,E,D,C,C,D,E,D,C,C, 123], frequency
-      LOOKUP masterIndex, [Q,Q,Q,Q,Q,Q,Q,Q,Q,Q,Q,Q,Q,Q,W,Q,Q,Q,Q,Q,Q,Q,Q,Q,Q,Q,Q,Q,Q,W], noteDuration
+      LOOKUP masterIndex, [E,E,F,G,G,F,E,D,C,C,D,E,E,D,D,E,E,F,G,G,F,E,D,C,C,D,E,D,C,C, 123], frequency  'ode to joy
+      LOOKUP masterIndex, [W,W,W,W,W,W,W,W,W,W,W,W,W,W,H,W,W,W,W,W,W,W,W,W,W,W,W,W,W,H], noteDuration
   CASE 3:
-       DEBUG "Case 3"
+      LOOKUP masterIndex, [E2,Fs2,G2,A2,G2,Fs2,E2,B,G,A,B,G,B,Fs,B,G,B,E, 123], frequency 'eleanor rigby
+      LOOKUP masterIndex, [H ,Q  ,Q ,Q ,W ,W  ,W ,W,W,Q,Q,Q,Q,Q ,Q,Q,Q,H], noteDuration
   CASE 4:
-       DEBUG "Case 4"
+      LOOKUP masterIndex, [G,G,G,As,As,C2,C2,Gs,C2,DS2,As,As,G,F,Ds,G,Gs,As,Gs,F,Ds, 123], frequency 'o holy night
+      LOOKUP masterIndex, [H,W,W,H ,W, W,W,W,W ,W, H  ,H ,W, W,W,H ,W,W ,H ,W ,W,L], noteDuration
   CASE 5:
-       DEBUG "Case 5"
+      LOOKUP masterIndex, [C3,B_2,G,A,E2,C2,D2,F2,E2,C2,D2,A,D2,C2,G,A,E, 123], frequency 'telephone line
+      LOOKUP masterIndex, [Q ,Q  ,Q,Q,L ,Q ,L ,Q ,Q, Q, Q ,L,Q ,Q, Q,Q,L], noteDuration
   ENDSELECT
 RETURN
