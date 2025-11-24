@@ -1,0 +1,162 @@
+' Nicholas Ambrosio - Project 10 - Due: Dec 3, 2025
+' {$STAMP BS2}
+' {$PBASIC 2.5}
+
+' Pins 0 - 6 are Left 7 seg
+' Pins 8 - 14 are Right 7 seg
+' Pin 7 = Speaker
+' Pin 15 = PhotoTransistor
+DIRS = %1111111111111111 ' Make all the 7 segment pins output
+
+time VAR Word 'Variable to hold the result of RCTIME
+timeSinceChange VAR Word
+frequency VAR Word
+frequency = 0
+currentState VAR Byte
+lastState VAR Byte
+outBinary VAR Byte 'This variable is the output seqeunce for the left 7 segment display (letters)
+outBinary2 VAR Byte 'This is the output sequence for the right 7 segment diplsay (numbers)
+
+
+main:
+  DO
+    'Read the light level
+    GOSUB getLightLevel
+    'Check the state
+    GOSUB checkState
+    'Display state (0-9)
+    GOSUB updateLightLevelDisplay
+
+    IF lastState = currentState THEN
+      'Increment the time
+      timeSinceChange = timeSinceChange + 60
+      'If it hasnt changes in 2 seconds
+      IF timeSinceChange > 500 THEN
+        'display the note
+        GOSUB updateNoteDiplsay
+      ENDIF
+    ELSE
+      'If it has changed
+      timeSinceChange = 0
+    ENDIF
+
+    'Play Note
+    FREQOUT 7, 100, frequency
+  LOOP
+RETURN
+
+'-------------------SUBROUTINES--------------------
+
+getLightLevel:
+  HIGH 15
+  PAUSE 1
+  RCTIME 15, 11, time 'This can over 15 ms if it's dark enough! need smaller resistor for darker environment
+
+  'DEBUG ? time
+
+  'IF time > 18000 THEN time = 18000
+  'PAUSE (10 - (time/2000)) 'This normalizes the time it takes to get the light level so any delay is consistent
+RETURN
+
+checkState:
+  'Set the last state to the current state
+  lastState = currentState
+  'Set the current State
+  IF time > 17500 THEN 'This is the darkest it will get (big shadow)
+    currentState = 0
+  ELSEIF time < 17500 AND time > 13500 THEN
+    currentState = 1
+  ELSEIF time < 13000 AND time > 12000 THEN
+    currentState = 2
+  ELSEIF time < 12000 AND time > 11000 THEN
+    currentState = 3
+  ELSEIF time < 10000 AND time > 9000 THEN
+    currentState = 4
+  ELSEIF time < 8000 AND time > 7000 THEN
+    currentState = 5
+  ELSEIF time < 6000 AND time > 5000 THEN
+    currentState = 6
+  ELSEIF time < 4800 AND time > 4400 THEN
+    currentState = 7
+  ELSEIF time < 4100 AND time > 3900 THEN
+    currentState = 8
+  ELSEIF time < 3700 THEN 'This is the lightest it will get (no shadow)
+    currentState = 9
+  ENDIF
+RETURN
+
+updateLightLevelDisplay:
+  IF timeSinceChange > 500 THEN RETURN 'Dont do this function if we've waited 2 seconds or more
+  SELECT currentState
+  CASE 0:
+    outBinary2 = %01111110
+    frequency = 1760 'A6
+  CASE 1:
+    outBinary2 = %01001000
+    frequency = 1976 'B6
+  CASE 2:
+    outBinary2 = %00111101
+    frequency = 2093 'C7
+  CASE 3:
+    outBinary2 = %01101101
+    frequency = 2350 'D7
+  CASE 4:
+    outBinary2 = %01001011
+    frequency = 2638 'E7
+  CASE 5:
+    outBinary2 = %01100111
+    frequency = 2792 'F7
+  CASE 6:
+    outBinary2 = %01110011
+    frequency = 3136 'G7
+  CASE 7:
+    outBinary2 = %01001100
+    frequency = 3520 'A7
+  CASE 8:
+    outBinary2 = %01111111
+    frequency = 3952 'B7
+  CASE 9:
+    outBinary2 = %01001111
+    frequency = 4186 'C8
+  ENDSELECT
+  OUTH = outBinary2
+  OUTL = %00000000 'Make sure the other 7 segment is off if we're in light level mode
+RETURN
+
+updateNoteDiplsay:
+  IF timeSinceChange < 500 THEN RETURN 'Dont do this function if we haven't been on a note for 2 seconds
+  SELECT currentState
+  CASE 0:
+    outBinary = %01011111
+    outBinary2 = %01110011 'A6
+  CASE 1:
+    outBinary = %01110011
+    outBinary2 = %01110011 'B6
+  CASE 2:
+    outBinary = %00110110
+    outBinary2 = %01001100 'C7
+  CASE 3:
+    outBinary = %01111001
+    outBinary2 = %01001100 'D7
+  CASE 4:
+    outBinary = %00110111
+    outBinary2 = %01001100 'E7
+  CASE 5:
+    outBinary = %00010111
+    outBinary2 = %01001100 'F7
+  CASE 6:
+    outBinary = %01101111
+    outBinary2 = %01001100 'G7
+  CASE 7:
+    outBinary = %01011111
+    outBinary2 = %01001100 'A7
+  CASE 8:
+    outBinary = %01110011
+    outBinary2 = %01001100 'B7
+  CASE 9:
+    outBinary = %00110110
+    outBinary2 = %01111111 'C8
+  ENDSELECT
+  OUTH = outBinary2
+  OUTL = outBinary
+RETURN
