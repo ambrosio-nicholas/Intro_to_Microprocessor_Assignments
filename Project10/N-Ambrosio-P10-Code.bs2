@@ -29,7 +29,7 @@ main:
 
     IF lastState = currentState THEN
       'Increment the time
-      timeSinceChange = timeSinceChange + 60
+      timeSinceChange = timeSinceChange + 40
       'If it hasnt changes in 2 seconds
       IF timeSinceChange > 500 THEN
         'display the note
@@ -41,7 +41,7 @@ main:
     ENDIF
 
     'Play Note
-    FREQOUT 7, 100, frequency
+    FREQOUT 7, 80, frequency
   LOOP
 RETURN
 
@@ -62,25 +62,25 @@ checkState:
   'Set the last state to the current state
   lastState = currentState
   'Set the current State
-  IF time > 17500 THEN 'This is the darkest it will get (big shadow)
+  IF time > 1800 THEN 'This is the darkest it will get (big shadow)
     currentState = 0
-  ELSEIF time < 17500 AND time > 13500 THEN
+  ELSEIF time < 1450 AND time > 750 THEN
     currentState = 1
-  ELSEIF time < 13000 AND time > 12000 THEN
+  ELSEIF time < 670 AND time > 440 THEN
     currentState = 2
-  ELSEIF time < 12000 AND time > 11000 THEN
+  ELSEIF time < 430 AND time > 340 THEN
     currentState = 3
-  ELSEIF time < 10000 AND time > 9000 THEN
+  ELSEIF time < 300 AND time > 250 THEN
     currentState = 4
-  ELSEIF time < 8000 AND time > 7000 THEN
+  ELSEIF time < 240 AND time > 200 THEN
     currentState = 5
-  ELSEIF time < 6000 AND time > 5000 THEN
+  ELSEIF time < 195 AND time > 180 THEN
     currentState = 6
-  ELSEIF time < 4800 AND time > 4400 THEN
+  ELSEIF time < 175 AND time > 165 THEN
     currentState = 7
-  ELSEIF time < 4100 AND time > 3900 THEN
+  ELSEIF time < 158 AND time > 130 THEN
     currentState = 8
-  ELSEIF time < 3700 THEN 'This is the lightest it will get (no shadow)
+  ELSEIF time < 120 THEN 'This is the lightest it will get (no shadow)
     currentState = 9
   ENDIF
 RETURN
