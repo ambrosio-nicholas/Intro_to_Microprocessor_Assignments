@@ -1,0 +1,118 @@
+' Nicholas Ambrosio - Project 11 - Due: Dec 8, 2025
+' {$STAMP BS2}
+' {$PBASIC 2.5}
+
+'IN 11 = Left Button / Dimmer
+'IN 12 = Right Button / Brighter
+'PIN 9 = Clock
+'Pin 8 = Up/Down
+'Pin 15 = Speaker
+'Pins 0-7 = 7 Segment
+'Pin 14 = servo
+
+state VAR Nib
+potLevel VAR Byte 'This is the level at which the digital potentiometer will be at. 0 - 127.
+targetPotLevel VAR Byte 'This is the level we want it to be at
+frequency VAR Word
+servoPos VAR Word
+outBinary VAR Byte
+
+'Initialize 7 segment to 0
+DIRL = %11111111
+OUTL = %00000000
+
+'Initialize the digital potentiometer to full resistance
+HIGH 8
+FOR potLevel = 127 TO 0
+  PULSOUT 9, 5
+NEXT
+
+DO
+
+  GOSUB checkButtons
+
+  GOSUB updateVariables
+
+  GOSUB setDigitalPotentiometer
+
+  PULSOUT 14, servoPos
+
+LOOP
+
+
+'------------Subroutines-------------
+checkButtons:
+  IF IN11 = 1 AND state > 0 THEN 'Dim Button
+    'Decrease the state
+    state = state - 1
+    DO 'Button debounce
+    LOOP UNTIL IN11 = 0
+
+    GOSUB playTuneDown
+  ELSEIF IN11 = 1 AND state = 0 THEN
+    state = 5
+    DO 'Button debounce
+    LOOP UNTIL IN11 = 0
+
+    GOSUB playTuneDown
+  ELSEIF IN12 = 1 AND state < 5 THEN 'Brighten Button
+    'Increase the state
+    state = state + 1
+    DO 'Button debounce
+    LOOP UNTIL IN12 = 0
+
+    GOSUB playTuneUp
+  ELSEIF IN12 = 1 AND state = 5 THEN
+    state = 0
+    DO 'Button debounce
+    LOOP UNTIL IN12 = 0
+
+    GOSUB playTuneUp
+  ENDIF
+RETURN
+
+updateVariables:
+  'Update the variables based on the state
+  LOOKUP state, [1210,1032,854,676,498,320], servoPos
+  LOOKUP state, [1200,1400,1600,1800,2000,2200], frequency
+  LOOKUP state, [0,0,90,115,122,127], targetPotLevel '0 is high resistance, 127 is low
+  LOOKUP state, [%00000000,%01001000,%00111101,%01101101,%01001011,%01100111], outBinary
+  OUTL = outBinary
+RETURN
+
+playTuneUp:
+  FREQOUT 15, 30, frequency
+  FREQOUT 15, 30, frequency + 100
+  FREQOUT 15, 30, frequency + 200
+RETURN
+
+playTuneDown:
+  FREQOUT 15, 30, frequency
+  FREQOUT 15, 30, frequency - 100
+  FREQOUT 15, 30, frequency - 200
+RETURN
+
+setDigitalPotentiometer:
+  IF potLevel < targetPotLevel THEN
+    'Increase level
+    HIGH 8
+    DO
+      'Clock
+      PULSOUT 9, 5
+      potLevel = potLevel + 1
+
+    LOOP UNTIL potLevel = targetPotLevel
+  ELSEIF potLevel > targetPotLevel THEN
+    'Decrease level
+    LOW 8
+    DO
+      'Clock
+      PULSOUT 9, 5
+      potLevel = potLevel - 1
+
+    LOOP UNTIL potLevel = targetPotLevel
+  ENDIF
+
+  'DEBUG ? potLevel
+
+RETURN
