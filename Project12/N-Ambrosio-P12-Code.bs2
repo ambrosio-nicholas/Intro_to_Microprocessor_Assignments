@@ -24,7 +24,7 @@ delay VAR Word 'This is the time in ms between parts of the sequence
 delay = 300
 speedUpFactor VAR Word 'This is how much time will be taken off of the delay each round
 
-speedUpFactor = 16 'This is basically the difficulty
+speedUpFactor = 15 'This is basically the difficulty
 
 buttonPressed VAR Nib 'This lets us know which button was pressed last
 wasPressed VAR Bit 'This lets us know a button was pressed
@@ -64,18 +64,22 @@ DO
         'Do nothing until the round is complete
       ELSE
         'Incorrect button pressed
-        delay = delay + (speedUpFactor / (round - 2))
-        round = round - 2
+        delay = delay + (speedUpFactor * 2)
+        IF round = 1 THEN
+          round = 0
+        ELSE
+          round = round - 2
+        ENDIF
         GOSUB wrongButton
         index = 15
       ENDIF
     NEXT
     'Round is complete
-    delay = delay - (speedUpFactor / round)
+    delay = delay - (speedUpFactor)
     PAUSE 1000
   NEXT
 
-  IF round > 1 THEN GOSUB winGameSequence 'Only let them win if they got to the end legit
+  IF (round > 1 AND round < 14) THEN GOSUB winGameSequence 'Only let them win if they got to the end legit
 
 LOOP
 
