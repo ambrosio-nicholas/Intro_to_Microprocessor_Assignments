@@ -1,0 +1,235 @@
+' Nicholas Ambrosio - Project 12 - Due: Dec 8, 2025
+' {$STAMP BS2}
+' {$PBASIC 2.5}
+
+'Pins 0 - 6 =  7Segment
+'Pin 7 = Red LED
+'Pin 8 = 0/Red Button
+'Pin 9 = Yellow LED
+'Pin 10 = 1/Yellow Button
+'Pin 11 = Green LED
+'Pin 12 = 2/Green Button
+'Pin 13 = Blue LED
+'Pin 14 = 3/Blue Button
+'Pin 15 = Speaker
+
+DIRL = %11111111 'Make 7 segment all outputs
+
+outBinary VAR Byte 'Holds the 7 segment output data
+round VAR Nib 'Holds the round of the game we're on
+sequence VAR Nib(10) 'An array of numbers that will be the code of the game
+index VAR Byte 'An index that can be used later on
+rng VAR Word 'This is used to make our sequence Random
+delay VAR Word 'This is the time in ms between parts of the sequence
+delay = 300
+speedUpFactor VAR Word 'This is how much time will be taken off of the delay each round
+
+speedUpFactor = 16 'This is basically the difficulty
+
+buttonPressed VAR Nib 'This lets us know which button was pressed last
+wasPressed VAR Bit 'This lets us know a button was pressed
+duration VAR Word 'This is used for the win sequence
+frequency VAR Word 'This is used for the win sequence
+
+maxRounds VAR Nib
+maxRounds = 9
+
+DO
+  'Before Game
+  GOSUB waitToStart 'Play an animation until the user presses a button
+
+'--------------Start Game---------------------
+  round = 0
+  OUTL = %01111110
+
+  GOSUB generateSequence
+
+  PAUSE 1000 'Wait a second
+
+  '----------------------Game Loop--------------------
+  FOR round = 0 TO maxRounds
+    'Play the sequence
+    GOSUB playSequence
+
+    FOR index = 0 TO round
+      wasPressed = 0
+      DO
+        'Check for player to input sequence
+        GOSUB checkButtons 'Checks for a button press, lights up the LED, plays a tone, stores which button was pressed
+      LOOP UNTIL wasPressed = 1
+
+      'Check if it was correct
+      IF buttonPressed = sequence(index) THEN
+        'Correct button is pressed
+        'Do nothing until the round is complete
+      ELSE
+        'Incorrect button pressed
+        delay = delay + (speedUpFactor / (round - 2))
+        round = round - 2
+        GOSUB wrongButton
+        index = 15
+      ENDIF
+    NEXT
+    'Round is complete
+    delay = delay - (speedUpFactor / round)
+    PAUSE 1000
+  NEXT
+
+  IF round > 1 THEN GOSUB winGameSequence 'Only let them win if they got to the end legit
+
+LOOP
+
+'--------------------Subroutines--------------
+
+playSequence:
+  FOR index = 0 TO round
+    'Set the seven segment
+    LOOKUP round, [%01111110, %01001000, %00111101, %01101101, %01001011, %01100111, %01110011, %01001100, %01111111, %01001111], outBinary
+    OUTL = outBinary
+
+    SELECT sequence(index) 'Find the number in the array
+
+    CASE 0: 'Red LED
+      HIGH 7
+      FREQOUT 15, delay, 2093 'Play C
+      LOW 7
+
+    CASE 1: 'Yellow LED
+      HIGH 9
+      FREQOUT 15, delay, 2638 'Play E
+      LOW 9
+
+    CASE 2: 'Green LED
+      HIGH 11
+      FREQOUT 15, delay, 3136 'Play G
+      LOW 11
+
+    CASE 3: 'Blue LED
+      HIGH 13
+      FREQOUT 15, delay, 3952 'Play B
+      LOW 13
+
+    ENDSELECT
+
+    PAUSE delay
+  NEXT
+RETURN
+
+waitToStart:
+  DO
+    rng = rng + 1 'Make our randomness more random
+    round = (round + 1) // 14
+    LOOKUP round, [%01000000,%01000000,%00100000,%00100000,%00010000,%00010000,%00001000,%00001000,%00000100,%00000100,%00000010,%00000010,%00000001,%00000001], outBinary
+    OUTL = outBinary
+    PAUSE 25
+  LOOP UNTIL (IN8 = 1 OR IN10 = 1 OR IN12 = 1 OR IN14 = 1)
+RETURN
+
+generateSequence:
+  'Generate 10 numbers
+  FOR round = 0 TO 9
+    RANDOM rng
+    sequence(round) = rng // 4 'Make the random number between 0-3 and store it in our array
+  NEXT
+
+RETURN
+
+checkButtons:
+
+  IF IN8 = 1 THEN '0/Red Button
+    HIGH 7 'Turn on Red LED
+    FREQOUT 15, delay, 2093 'Play C
+    DO
+      'Button Debounce
+    LOOP UNTIL IN8 = 0
+    LOW 7 'Turn off Red LED
+    buttonPressed = 0
+    wasPressed = 1
+
+  ELSEIF IN10 = 1 THEN '1/Yellow Button
+    HIGH 9 'Turn on Yellow LED
+    FREQOUT 15, delay, 2638 'Play E
+    DO
+      'Button Debounce
+    LOOP UNTIL IN10 = 0
+    LOW 9 'Turn off Yellow LED
+    buttonPressed = 1
+    wasPressed = 1
+
+  ELSEIF IN12 = 1 THEN '2/Green Button
+    HIGH 11 'Turn on Green LED
+    FREQOUT 15, delay, 3136 ' Play G
+    DO
+      'Button Debounce
+    LOOP UNTIL IN12 = 0
+    LOW 11 'Turn off Green LED
+    buttonPressed = 2
+    wasPressed = 1
+
+  ELSEIF IN14 = 1 THEN '3/Blue Button
+    HIGH 13 'Turn on Blue LED
+    FREQOUT 15, delay, 3952 'Play B
+    DO
+      'Button Debounce
+    LOOP UNTIL IN14 = 0
+    LOW 13 'Turn off Blue LED
+    buttonPressed = 3
+    wasPressed = 1
+
+  ENDIF
+
+RETURN
+
+wrongButton:
+  PAUSE 250
+  FREQOUT 15, 100, 3160
+  FREQOUT 15, 100, 2638
+  FREQOUT 15, 100, 2217
+  FREQOUT 15, 200, 1864
+
+  LOOKUP round + 1, [%01111110, %01001000, %00111101, %01101101, %01001011, %01100111, %01110011, %01001100, %01111111, %01001111], outBinary
+  OUTL = outBinary
+  PAUSE 100
+  OUTL = %00000000
+  PAUSE 100
+  OUTL = outBinary
+  PAUSE 100
+  OUTL = %00000000
+  PAUSE 100
+  OUTL = outBinary
+  PAUSE 100
+  OUTL = %00000000
+  PAUSE 100
+  OUTL = outBinary
+  PAUSE 250
+RETURN
+
+winGameSequence:
+  LOW 7
+  LOW 9
+  LOW 11
+  LOW 13
+  OUTL = %00000000
+  PAUSE 250
+
+  HIGH 7
+
+  FOR index = 0 TO 26
+
+    LOOKUP index, [788, 1046, 1318, 1567, 2093, 2637, 3153, 2637, 830, 1046, 1244, 1661, 2093, 2489, 3322, 2489, 932, 1174, 1396, 1864, 2349, 2793, 2793, 2793, 2793, 2793, 2093], frequency
+    LOOKUP index, [200, 200,  200,  200,  200,  200,  400,  400,  200, 200,  200,  200,  200,  200,  400,  400,  200, 200,  200,  200,  200,  200,  400,  200,  200,  200,  400], duration
+    FREQOUT 15, duration, frequency
+
+    IF index = 7 THEN HIGH 13
+
+    IF index = 15 THEN HIGH 9
+
+    IF index = 25 THEN
+      HIGH 11
+      OUTL = %11111111
+    ENDIF
+
+    NEXT
+  OUTS= %0000000000000000
+  PAUSE 250
+RETURN
