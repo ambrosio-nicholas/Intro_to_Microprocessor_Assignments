@@ -1,0 +1,8 @@
+' {$STAMP BS2} ' BASIC Stamp Directive
+' {$PBASIC 2.5} ' PBASIC Directive
+
+SEROUT 14, 84, [22,12] 'Turn on and clear the screen
+
+SEROUT 14, 84, ["Start"] ' Print on Line 0
+SEROUT 14, 84, [162] '  Move the cursor 6 characters before the right edge of Line 1
+SEROUT 14, 84, ["Finish"] ' Print Message

@@ -1,0 +1,5 @@
+' {$STAMP BS2} ' BASIC Stamp Directive
+' {$PBASIC 2.5} ' PBASIC Directive
+
+SEROUT 14, 396, [22, 12] ' Turn on, clear screen
+SEROUT 14, 396, ["just switch1 ON"] ' Print on Line 0

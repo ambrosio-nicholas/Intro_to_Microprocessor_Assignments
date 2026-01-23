@@ -1,0 +1,16 @@
+' Display a test message on the Parallax Serial LCD.
+' {$STAMP BS2} ' Target device = BASIC Stamp 2
+' {$PBASIC 2.5} ' Language = PBASIC 2.5
+
+SEROUT 14, 84, [22, 12] ' Initialize LCD
+
+PAUSE 5
+
+SEROUT 14, 84, ["See this?", 13, ' Text message, carriage return
+
+DO ' Start DO...LOOP code block
+  PAUSE 600 ' 6/10 second delay
+  SEROUT 14, 84, [22] ' Turn display on
+  PAUSE 400 ' 4/10 second delay
+  SEROUT 14, 84, [21] ' Turn display off
+LOOP

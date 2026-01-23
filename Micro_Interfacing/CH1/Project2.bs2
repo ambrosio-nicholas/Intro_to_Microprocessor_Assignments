@@ -1,0 +1,25 @@
+' {$STAMP BS2} ' BASIC Stamp Directive
+' {$PBASIC 2.5} ' PBASIC Directive
+
+index VAR Byte
+' Initialize a custom character
+SEROUT 14, 84, [22] 'Turn on
+
+SEROUT 14, 84, [248, %00000,%00000,%01010,%01010,%00000,%10001,%11111,%00000]
+
+
+DO
+  SEROUT 14, 84, [12] 'clear the screen
+  PAUSE 1000
+
+  FOR index = 1 TO 3
+    SEROUT 14, 84, [0, " "] 'Print custom character 0 three times
+    PAUSE 500
+  NEXT
+
+  PAUSE 1000
+  SEROUT 14, 84, [248, %00000,%00000,%01010,%01010,%00000,%11111,%10001,%00000]
+  SEROUT 14, 84, [148, "Redefined character!"]
+  PAUSE 2000
+
+LOOP

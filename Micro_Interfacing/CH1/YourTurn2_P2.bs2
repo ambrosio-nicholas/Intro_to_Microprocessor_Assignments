@@ -1,0 +1,21 @@
+' Display a test message on the Parallax Serial LCD.
+' {$STAMP BS2} ' Target device = BASIC Stamp 2
+' {$PBASIC 2.5} ' Language = PBASIC 2.5
+
+counter VAR Byte ' FOR...NEXT loop index
+
+SEROUT 14, 84, [22, 12] ' Initialize LCD
+
+PAUSE 5 ' 5 ms delay for clearing display
+
+FOR counter = 0 TO 12 ' Count to 12; increment at 1/2 s
+  SEROUT 14, 84, [DEC2 counter, " "]
+  PAUSE 300
+NEXT
+
+FOR counter = 0 TO 12 ' Count to 12; increment at 1/2 s
+  SEROUT 14, 84, [? counter, " "]
+  PAUSE 300
+NEXT
+
+END

@@ -1,0 +1,49 @@
+' {$STAMP BS2} ' Target device = BASIC Stamp 2
+' {$PBASIC 2.5} ' Language = PBASIC 2.5
+
+' -----[ Initialization ]-----------------------------------------------------
+PAUSE 250 ' Debounce power supply
+
+SEROUT 14, 84, [248, ' Define Custom Character 0
+               %00000, '
+               %11111, ' * * * * *
+               %11111, ' * * * * *
+               %01110, '   * * *
+               %00100, '     *
+               %01010, '   *   *
+               %10001, ' *       *
+               %11111] ' * * * * *
+
+SEROUT 14, 84, [249, %00000, %11111, %11011, %01110, %00100, %01110, %10001, %11111] ' Custom Character 1
+
+SEROUT 14, 84, [250, %00000, %11111, %11011, %01110, %00100, %01110, %10101, %11111] ' Custom Character 2
+
+SEROUT 14, 84, [251, %00000, %11111, %11001, %01110, %00100, %01110, %10101, %11111] ' Custom Character 3
+
+SEROUT 14, 84, [252, %00000, %11111, %11001, %01110, %00100, %01010, %10111, %11111] ' Custom Character 4
+
+SEROUT 14, 84, [253, %00000, %11111, %10001, %01110, %00100, %01110, %10111, %11111] ' Custom Character 5
+
+SEROUT 14, 84, [254, %00000, %11111, %10001, %01110, %00100, %01010, %11111, %11111] ' Custom Character 6
+
+SEROUT 14, 84, [255, ' Define Custom Character 7
+               %00000, '
+               %11111, ' * * * * *
+               %10001, ' *       *
+               %01010, '   *   *
+               %00100, '     *
+               %01110, '   * * *
+               %11111, ' * * * * *
+               %11111] ' * * * * *
+
+SEROUT 14, 84, [22, 12] ' Turn on display and clear
+
+PAUSE 5 ' 5 ms delay for clearing display
+
+' -----[ Main Routine ]-------------------------------------------------------
+DO
+  SEROUT 14, 84, 200, [133, 0]
+  ' Backspace, custom character, backspace, custom character, etc
+  SEROUT 14, 84, 200, [8, 1, 8, 2, 8, 3, 8, 4, 8, 5, 8, 6, 8, 7, 8]
+  PAUSE 500
+LOOP

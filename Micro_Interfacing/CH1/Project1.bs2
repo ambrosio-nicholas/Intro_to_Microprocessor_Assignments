@@ -1,0 +1,30 @@
+' {$STAMP BS2} ' BASIC Stamp Directive
+' {$PBASIC 2.5} ' PBASIC Directive
+
+' Initialize a custom character
+SEROUT 14, 84, [22] 'Turn on
+
+
+DO
+  SEROUT 14, 84, [12] 'clear the screen
+  PAUSE 2000
+
+  SEROUT 14, 84, ["We choose to go"]
+  SEROUT 14, 84, [148, "to the moon,"]
+
+  PAUSE 2000
+  SEROUT 14, 84, [12] 'clear the screen
+  PAUSE 10
+
+  SEROUT 14, 84, ["not because"]
+  SEROUT 14, 84, [148, "it is easy,"]
+
+  PAUSE 2000
+  SEROUT 14, 84, [12] 'clear the screen
+  PAUSE 10
+
+  SEROUT 14, 84, ["but because"]
+  SEROUT 14, 84, [148, "it is hard." ]
+  PAUSE 2000
+
+LOOP

@@ -1,0 +1,25 @@
+' Display a test message on the Parallax Serial LCD.
+' {$STAMP BS2} ' Target device = BASIC Stamp 2
+' {$PBASIC 2.5} ' Language = PBASIC 2.5
+
+index VAR Nib ' FOR...NEXT loop index
+character VAR Byte ' Character storage
+offset VAR Byte ' Offset value
+
+PAUSE 1000
+
+SEROUT 14, 84, [12]: PAUSE 5 ' Clear display
+
+SEROUT 14, 84, ["This is a", 13] ' Text & CR
+
+FOR index = 0 TO 3 ' Character display sequence
+  PAUSE 600
+
+  LOOKUP index, ["T", "E", "S", "T"], character
+
+  LOOKUP index, [ 1, 3, 11, 14], offset
+
+  SEROUT 14, 84, [(148 + offset), character]
+NEXT
+
+END ' Program end

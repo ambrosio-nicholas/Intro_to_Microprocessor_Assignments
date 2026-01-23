@@ -1,0 +1,40 @@
+' {$STAMP BS2} ' Target device = BASIC Stamp 2
+' {$PBASIC 2.5} ' Language = PBASIC 2.5
+
+' -----[ Initialization ]-----------------------------------------------------
+PAUSE 250 ' Debounce power supply
+
+SEROUT 14, 84, [248, ' Define Custom Character 0
+               %00000, '
+               %11111, ' * * * * *
+               %11111, ' * * * * *
+               %01110, '   * * *
+               %00100, '     *
+               %01010, '   *   *
+               %10001, ' *       *
+               %11111] ' * * * * *
+
+SEROUT 14, 84, [255, ' Define Custom Character 7
+               %00000, '
+               %11111, ' * * * * *
+               %10001, ' *       *
+               %01010, '   *   *
+               %00100, '     *
+               %01110, '   * * *
+               %11111, ' * * * * *
+               %11111] ' * * * * *
+
+SEROUT 14, 84, [22, 12] ' Turn on display and clear
+
+PAUSE 5 ' 5 ms delay for clearing display
+
+' -----[ Main Routine ]-------------------------------------------------------
+DO
+  SEROUT 14, 84, [133] ' Cursor -> Line 0, char
+  SEROUT 14, 84, [0] ' Display Custom Character 0
+  PAUSE 1250 ' Delay for 1.25 seconds
+
+  SEROUT 14, 84, [8] ' Backspace
+  SEROUT 14, 84, [7] ' Display Custom Character 7
+  PAUSE 1500 ' Delay for 1.50 seconds
+LOOP

@@ -1,0 +1,102 @@
+' {$STAMP BS2} ' BASIC Stamp Directive
+' {$PBASIC 2.5} ' PBASIC Directive
+
+' -----[ DATA Directives ]----------------------------------------------------
+Message1 DATA @ 2, "Message "
+Message2 DATA "again"
+Message3 DATA "Larger message, going faster..."
+Message4 DATA
+
+' -----[ I/O Definitions ]----------------------------------------------------
+LcdPin PIN 14 ' LCD I/O pin
+
+' -----[ Constants ]----------------------------------------------------------
+T9600 CON 84 ' True, 8-bits, no parity, 9600
+LcdCls CON 12 ' Form feed -> clear screen
+LcdCr CON 13 ' Carriage return
+LcdOff CON 21 ' Turns display off
+LcdOn CON 22 ' Turns display on
+Line0 CON 128 ' Line 0, character 0
+Line1 CON 148 ' Line 1, character 0
+TimeOn CON 250 ' Character on time
+TimeOff CON 0 ' Character fade time
+
+' -----[ Variables ]----------------------------------------------------------
+' Functional variables for Scroll_Message subroutine.
+cursorStart VAR Byte ' First character location
+head VAR Byte ' Start of displayed text
+tail VAR Byte ' End of displayed text
+pointer VAR Byte ' EEPROM address pointer
+character VAR Byte ' Stores a character
+' Configuration variables for Scroll_Message subroutine.
+increment VAR Nib ' Characters to shift
+windowRight VAR Byte ' Rightmost character address
+windowLeft VAR Byte ' Leftmost character address
+messageStart VAR Byte ' Start EEPROM address
+messageEnd VAR Byte ' End EEPROM address
+
+' -----[ Initialization ]-----------------------------------------------------
+SEROUT LcdPin, T9600, [LcdOn, LcdCls] ' Turn on display & clear
+PAUSE 5 ' Delay 5 ms
+
+' -----[ Main Routine ]-------------------------------------------------------
+' Set values of configuration variables, then call Scroll_Message.
+messageStart = Message1: messageEnd = message2
+windowLeft = 134: windowRight = 137
+increment = 1
+GOSUB Scroll_Message
+' Change the values of various configuration variables and demonstrate the
+' effect on the display with each change.
+windowLeft = 131: windowRight = 140
+GOSUB Scroll_Message
+messageStart = Message1: messageEnd = message3
+GOSUB Scroll_Message
+messageStart = Message3: messageEnd = message4
+windowLeft = 150: windowRight = 161
+increment = 2
+GOSUB Scroll_Message
+END
+
+' -----[ Subroutine - Scroll_Message ]----------------------------------------
+Scroll_Message:
+  cursorStart = windowRight - increment + 1 ' Rightmost character in window
+  head = 0 ' Initialize head and tail
+  tail = increment - 1 ' of message
+
+  ' Scrolling loop
+  DO WHILE tail<(MessageEnd-MessageStart)+(windowRight-windowLeft+increment)
+    SEROUT LcdPin, T9600, [cursorStart] ' Rightmost character in window
+
+    FOR pointer = head TO tail ' Clear old characters.
+      SEROUT LcdPin, T9600, [" "]
+    NEXT
+
+    PAUSE timeOff ' Let characters fade away
+
+    SEROUT LcdPin, T9600, [cursorStart] ' Rightmost character in window
+    ' This FOR...NEXT loop refreshes the message, shifted increment characters
+    ' to the left each time through until the end of the EEPROM message.
+    ' Then, it fills the display with space characters as the remainder of the
+    ' message shifts out to the window.
+    FOR pointer = head TO tail
+      IF (pointer <= (MessageEnd - MessageStart - 1)) THEN
+        READ pointer + MessageStart, character
+      ELSE
+      character = " "
+      ENDIF
+
+      SEROUT LcdPin, T9600, [character]
+    NEXT
+
+    PAUSE timeOn ' Give the characters some time
+    ' Increment until at window-left
+    cursorStart = cursorStart - increment MIN windowLeft
+    tail = tail + increment ' Increment tail pointer
+    ' Increment head pointer if tail pointer > window width.
+    IF tail > (windowRight - windowLeft) THEN
+      head = head + increment
+    ELSE
+      head = 0
+    ENDIF
+  LOOP ' Repeat scrolling loop
+RETURN

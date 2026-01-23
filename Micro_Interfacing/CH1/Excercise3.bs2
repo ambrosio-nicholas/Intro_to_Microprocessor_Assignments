@@ -1,0 +1,13 @@
+' {$STAMP BS2} ' BASIC Stamp Directive
+' {$PBASIC 2.5} ' PBASIC Directive
+
+SEROUT 14, 84, [22,12] 'Turn on and clear the screen
+                '1234567890987654321'
+SEROUT 14, 84, ["       HELLO       "]
+
+DO
+  SEROUT 14, 84, [21] 'Turn OFF Screen
+  PAUSE 500
+  SEROUT 14, 84, [22] 'Turn ON screen
+  PAUSE 500
+LOOP

@@ -1,0 +1,30 @@
+' {$STAMP BS2} ' Stamp directive
+' {$PBASIC 2.5} ' PBASIC Directive
+hours VAR Byte ' Stores hours
+minutes VAR Byte ' Stores minutes
+seconds VAR Byte ' Stores seconds
+
+SEROUT 14, 84, [22, 12] ' Start LCD & clear display
+
+PAUSE 5 ' Pause 5 ms for clear display
+
+SEROUT 14, 84, ["Time Elapsed...", 13] ' Text + carriage return
+
+SEROUT 14, 84, ["  h    m    s"] ' Text on second line
+
+DO ' Main Routine
+  ' Calculate hours, minutes, seconds
+  IF seconds = 60 THEN seconds = 0: minutes = minutes + 1
+
+  IF minutes = 60 THEN minutes = 0: hours = hours + 1
+
+  IF hours = 24 THEN hours = 0
+
+  ' Display digits on LCD on Line 1. The values 148, 153, 158
+  ' place the cursor at character 0, 5, and 10 for the time values.
+  SEROUT 14, 84, [148, DEC2 hours, 153, DEC2 minutes, 158, DEC2 seconds ]
+
+  PAUSE 991 ' Pause + overhead ~ 1 second
+
+  seconds = seconds + 1 ' Increment second counter
+LOOP

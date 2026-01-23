@@ -1,0 +1,4 @@
+' {$STAMP BS2} ' BASIC Stamp Directive
+' {$PBASIC 2.5} ' PBASIC Directive
+
+SEROUT 16, 84, ["Hello", CR]
