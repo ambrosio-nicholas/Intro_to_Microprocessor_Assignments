@@ -1,0 +1,121 @@
+' Nicholas Ambrosio - Project 1 - Due: Feb 5, 2026
+' {$STAMP BS2}
+' {$PBASIC 2.5}
+
+' IN0 = VibratorSensor
+' IN1 = Rest PushButton
+' Pin2 = GreenLED
+' Pin3 = YellowLED
+' Pin4 = RedLED
+' Pin15 = Servo
+' Pin 14 = LCD Serial
+
+counter VAR Word
+lightState VAR Byte
+position VAR Word
+timeWaited VAR Word
+reset VAR Bit
+fullMessage DATA @ 2, "Theater is at Max Capacity, Push Reset Button to Start Again.  "
+offset VAR Word
+pointer VAR Word ' This will point at the character we want to display
+pointer = 2
+character VAR Byte
+charCounter VAR Word
+
+SEROUT 14, 84, [22] 'Turn on LCD
+PAUSE 100 'Give it time to turn on
+
+GOSUB initialize
+
+' Check for reset button and vibrator sensor
+DO
+  GOSUB checkButtons
+  GOSUB updateState
+  PULSOUT 15, position
+LOOP
+
+' ---------------Subroutines-----------------
+initialize:
+  counter = 0
+  lightState = 0
+  position = 1200
+  LOW 3 'Turn off Yellow LED
+  LOW 4 'Turn off Red LED
+  SEROUT 14, 84, 20, [12, "AMC Theater 01", 148, "No of People in: 00", 168, "No of Vacancies: 50"] 'Clear LCD, and dislay text on the lines
+  HIGH 2 'Turn on Green LED
+  SEROUT 14, 84, [211,223,227] 'Play happy tone
+RETURN
+
+checkButtons:
+ IF IN0 = 1 AND counter < 50 THEN
+    DO 'Debounce
+    LOOP UNTIL IN0 = 0
+
+    counter = counter + 1
+  ENDIF
+
+  IF IN1 = 1 THEN
+    DO 'Debounce
+    LOOP UNTIL IN1 = 0
+    reset = 1
+    'GOSUB initialize
+  ENDIF
+RETURN
+
+updateState:
+  SEROUT 14, 84, [165, DEC2 counter, 185, DEC2 50 - counter]
+
+  IF counter > 40 AND counter < 46 THEN
+    lightState = 1
+    LOW 2
+    HIGH 3
+  ELSEIF counter >= 46 AND counter < 50 THEN
+    LOW 3
+    GOSUB flashRedLights
+    lightState = 2
+  ELSEIF counter >= 50 THEN
+    GOSUB fullCapacitySequence
+  ENDIF
+RETURN
+
+flashRedLights:
+  HIGH 4
+  GOSUB waitAndCheckButtons
+  LOW 4
+  GOSUB waitAndCheckButtons
+RETURN
+
+waitAndCheckButtons:
+  FOR timeWaited = 0 TO 20
+    GOSUB checkButtons
+    IF counter < 50 THEN
+      SEROUT 14, 84, [165, DEC2 counter, 185, DEC2 50 - counter]
+    ENDIF
+    PULSOUT 15, position
+  NEXT
+RETURN
+
+fullCapacitySequence:
+  position = 300
+  SEROUT 14, 84, [12] 'Clear LCD
+  PAUSE 5
+  SEROUT 14, 84, [211,227,223] 'Play sad tone
+  reset = 0
+  offset = 0
+
+  DO
+    GOSUB flashRedLights
+    GOSUB scrollMessage 'Scroll message across WHILE waiting FOR the pushbutton TO be pressed
+    offset = (offset + 1) // 61
+  LOOP UNTIL reset = 1
+RETURN
+
+scrollMessage:
+  ' "THEATER IS AT MAX CAPACITY, PUSH RESET BUTTON TO START AGAIN.  " = 63 Characters long
+  SEROUT 14, 84, [12, 128]
+  PAUSE 30
+  FOR charCounter = 0 TO 19
+    READ pointer + ((offset + charCounter) // 63), character ' Have each character point to the correct one in memory
+    SEROUT 14, 84, [character]
+  NEXT
+RETURN
