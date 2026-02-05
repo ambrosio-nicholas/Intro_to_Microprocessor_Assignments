@@ -37,6 +37,7 @@ LOOP
 ' ---------------Subroutines-----------------
 initialize:
   counter = 0
+  reset = 0
   lightState = 0
   position = 1200
   LOW 3 'Turn off Yellow LED
@@ -50,6 +51,7 @@ checkButtons:
  IF IN0 = 1 AND counter < 50 THEN
     DO 'Debounce
     LOOP UNTIL IN0 = 0
+    'PAUSE 100
 
     counter = counter + 1
   ENDIF
@@ -65,11 +67,11 @@ RETURN
 updateState:
   SEROUT 14, 84, [165, DEC2 counter, 185, DEC2 50 - counter]
 
-  IF counter > 40 AND counter < 46 THEN
+  IF counter > 39 AND counter < 45 THEN
     lightState = 1
     LOW 2
     HIGH 3
-  ELSEIF counter >= 46 AND counter < 50 THEN
+  ELSEIF counter >= 45 AND counter < 50 THEN
     LOW 3
     GOSUB flashRedLights
     lightState = 2
@@ -79,6 +81,7 @@ updateState:
 RETURN
 
 flashRedLights:
+  LOW 2
   HIGH 4
   GOSUB waitAndCheckButtons
   LOW 4
@@ -99,21 +102,31 @@ fullCapacitySequence:
   position = 300
   SEROUT 14, 84, [12] 'Clear LCD
   PAUSE 5
+  HIGH 4
   SEROUT 14, 84, [211,227,223] 'Play sad tone
   reset = 0
   offset = 0
 
   DO
-    GOSUB flashRedLights
     GOSUB scrollMessage 'Scroll message across WHILE waiting FOR the pushbutton TO be pressed
     offset = (offset + 1) // 61
-  LOOP UNTIL reset = 1
+    PULSOUT 15, position
+    PAUSE 20
+  LOOP UNTIL (IN1 = 1) OR (reset = 1)
+  GOSUB initialize
 RETURN
 
 scrollMessage:
   ' "THEATER IS AT MAX CAPACITY, PUSH RESET BUTTON TO START AGAIN.  " = 63 Characters long
+  FOR counter = 0 TO 50 STEP 5
+    PULSOUT 15, position
+    PAUSE 20
+    IF IN1 = 1 THEN
+      reset = 1
+    ENDIF
+  NEXT
   SEROUT 14, 84, [12, 128]
-  PAUSE 30
+
   FOR charCounter = 0 TO 19
     READ pointer + ((offset + charCounter) // 63), character ' Have each character point to the correct one in memory
     SEROUT 14, 84, [character]
