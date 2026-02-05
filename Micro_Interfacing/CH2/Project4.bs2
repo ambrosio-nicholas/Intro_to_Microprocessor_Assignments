@@ -1,0 +1,21 @@
+' {$STAMP BS2}
+' {$PBASIC 2.5}
+time VAR Word
+inchDist VAR Word
+cmDist VAR Word
+note VAR time
+
+DO
+  PULSOUT 15, 5
+  PULSIN 15, 1, time
+
+  inchDist = time ** 890
+  cmDist = time ** 2260
+  DEBUG HOME, DEC3 ? inchDist, DEC3 ? cmDist
+
+  IF inchDist < 8 THEN
+    LOOKUP inchDist-1, [2093,2349,2637,2793,3136,3520,3951], note
+    FREQOUT 11, 100, note
+  ENDIF
+  PAUSE 100
+LOOP

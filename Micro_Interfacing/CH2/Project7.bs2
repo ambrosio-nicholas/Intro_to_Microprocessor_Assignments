@@ -1,0 +1,48 @@
+' {$STAMP BS2}
+' {$PBASIC 2.5}
+time VAR Word
+inchDist VAR Word
+cmDist VAR Word
+note VAR time
+
+DIRL = %11111111
+SEROUT 14, 84, [24, 17, 248, %11111, %11111, %11111, %11111, %11111, %11111, %11111, %11111] 'Turn on LCD and make solid block
+
+DO
+  PULSOUT 15, 5
+  PULSIN 15, 1, time
+
+  inchDist = time ** 890
+  cmDist = time ** 2260
+  DEBUG HOME, DEC3 ? inchDist, DEC3 ? cmDist
+
+  IF inchDist < 8 THEN
+    LOOKUP inchDist-1, [2093,2349,2637,2793,3136,3520,3951], note
+    FREQOUT 11, 100, note
+  ENDIF
+  OUTL = %00000000
+  OUTL = %11111111 >> (7 - inchDist)
+  IF inchDist = 0 THEN
+    SEROUT 14, 84, [128, 0,0, "                     "]
+  ELSEIF inchDist = 1 THEN
+    SEROUT 14, 84, [128, 0,0,0,0, "                "]
+  ELSEIF inchDist = 2 THEN
+    SEROUT 14, 84, [128, 0, 0,0,0,0,0, "            "]
+  ELSEIF inchDist = 3 THEN
+    SEROUT 14, 84, [128, 0,0,0,0,0,0,0,0 , "          "]
+  ELSEIF inchDist = 4 THEN
+    SEROUT 14, 84, [128, 0, 0, 0, 0,0,0,0,0, 0, 0, "        "]
+  ELSEIF inchDist = 5 THEN
+    SEROUT 14, 84, [128, 0, 0,0,0,0,0,0,0,0,0,0,0, "      "]
+  ELSEIF inchDist = 6 THEN
+    SEROUT 14, 84, [128, 0, 0,0,0,0,0,0,0,0,0,0,0,0,0, "    "]
+  ELSEIF inchDist = 7 THEN
+    SEROUT 14, 84, [128, 0, 0,0,0,0,0,0,0,0,0,0,0,0,0,0,0, "  "]
+  ELSEIF inchDist = 8 THEN
+    SEROUT 14, 84, [128, 0, 0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0]
+  ELSE
+    SEROUT 14, 84, [128, "                "]
+  ENDIF
+  'HIGH inchDist - 1
+  PAUSE 100
+LOOP
