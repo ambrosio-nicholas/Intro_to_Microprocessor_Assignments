@@ -1,0 +1,22 @@
+' Measure Distance with the Ping))) sensor and display on LCD
+' {$STAMP BS2}
+' {$PBASIC 2.5}
+' Conversion constants for room temperature measurements.
+CmConstant CON 2260
+InConstant CON 890
+cmDistance VAR Word
+inDistance VAR Word
+time VAR Word
+PAUSE 200
+SEROUT 14, 84, [22, 12]
+PAUSE 5
+DEBUG CLS, "Program running..."
+DO
+PULSOUT 15, 5
+PULSIN 15, 1, time
+cmDistance = cmConstant ** time
+inDistance = inConstant ** time
+SEROUT 14, 84, [128, DEC3 cmDistance, " cm"]
+SEROUT 14, 84, [148, DEC3 inDistance, " in"]
+PAUSE 100
+LOOP

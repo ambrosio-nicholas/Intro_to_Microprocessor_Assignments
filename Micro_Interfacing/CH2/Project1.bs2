@@ -1,0 +1,39 @@
+' Measure Distance with the Ping))) sensor and display on LCD
+' {$STAMP BS2}
+' {$PBASIC 2.5}
+' Conversion constants for room temperature measurements.
+CmConstant CON 2260
+InConstant CON 890
+maxDistance CON 100 ' Max distance setting in cm
+cmDistance VAR Word
+inDistance VAR Word
+time VAR Word
+
+PAUSE 200
+SEROUT 14, 84, [22, 12]
+PAUSE 5
+DEBUG CLS, "Program running..."
+
+DO
+  PULSOUT 15, 5
+  PULSIN 15, 1, time
+
+  cmDistance = cmConstant ** time
+  inDistance = inConstant ** time
+
+  SEROUT 14, 84, [128, "Distance: ", DEC3 cmDistance, " cm"]
+  SEROUT 14, 84, [158, DEC3 inDistance, " in"]
+  SEROUT 14, 84, [188, "Time: ", DEC3 (time * 2), " micro-S"]
+
+  GOSUB blinkLight
+
+  PAUSE 100
+LOOP
+
+blinkLight:
+  IF cmDistance > maxDistance THEN
+    TOGGLE 13
+  ELSE
+    LOW 13
+  ENDIF
+RETURN

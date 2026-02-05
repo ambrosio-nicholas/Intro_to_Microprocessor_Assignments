@@ -1,0 +1,10 @@
+' Tests the Ping))) ultrasonic distance sensor
+' {$STAMP BS2}
+' {$PBASIC 2.5}
+time VAR Word
+DO
+  PULSOUT 15, 5
+  PULSIN 15, 1, time
+  DEBUG HOME, "time = ", DEC5 time
+  PAUSE 100
+LOOP

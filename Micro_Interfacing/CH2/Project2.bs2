@@ -1,0 +1,42 @@
+' {$STAMP BS2}
+' {$PBASIC 2.5}
+
+defaultDistance VAR Word
+time VAR Word
+
+PAUSE 200
+
+SEROUT 14, 84, [22, 12, 17]
+
+GOSUB  findDistance
+
+DO
+  PULSOUT 15, 5
+  PULSIN 15, 1, time
+
+  GOSUB blinkLight
+
+  PAUSE 100
+LOOP
+
+findDistance:
+  SEROUT 14, 84, 10, [128, "Hold sensor still."]
+  PAUSE 2000 'Make this however long you want them to have to place it.
+  SEROUT 14, 84, 10, [148, "Calibrating...."]
+  PAUSE 2000 'Some extra time to make sure it's where they want it to be.
+
+  PULSOUT 15, 5
+  PULSIN 15, 1, defaultDistance
+
+  SEROUT 14, 84, 10, [168, "DONE!"]
+
+RETURN
+
+blinkLight:
+  IF time < defaultDistance THEN
+    TOGGLE 13 'Flash light
+    SEROUT 14, 84 , [209, 227] 'Make sound
+  ELSE
+    LOW 13
+  ENDIF
+RETURN

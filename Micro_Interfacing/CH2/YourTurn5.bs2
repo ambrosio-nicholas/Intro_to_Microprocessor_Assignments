@@ -1,0 +1,20 @@
+' Measure distance with Ping))) sensor and display in centimeters.
+' {$STAMP BS2}
+' {$PBASIC 2.5}
+' Conversion constants for room temperature measurements.
+CmConstant CON 2260 ' room temp
+'CmConstant CON 2169 ' 0 degrees
+cmDistance VAR Word
+time VAR Word
+
+DO
+  PULSOUT 15, 5
+  PULSIN 15, 1, time
+
+  cmDistance = CmConstant ** time
+  DEBUG HOME, DEC3 cmDistance, " cm"
+  PAUSE 100
+LOOP
+
+' Temperatur error between 0 C and 22 C would be 3.9%
+' Distance error at 1m would be 3.9cm short
