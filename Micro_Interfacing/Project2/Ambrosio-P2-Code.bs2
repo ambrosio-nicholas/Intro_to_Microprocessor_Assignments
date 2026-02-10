@@ -1,0 +1,81 @@
+' Nicholas Ambrosio - Project 2 - Due: Feb 12, 2026
+' {$STAMP BS2}
+' {$PBASIC 2.5}
+
+'Pin 0 - left GLED
+'Pin 1 - left YLED
+'Pin 2 - left RLED
+'Pin 3 - right GLED
+'Pin 4 - right YLED
+'Pin 5 - right RLED
+'Pin 13 - PING sensor
+'Pin 14 - Serial LCD
+'Pin 15 - Servo
+
+pingTime VAR Word 'return variable for PING sensor
+cmDistance VAR Word 'distance in cm
+state VAR Byte 'state 0: x > 150cm, state 1: 150cm > x > 100cm, state 2: 99cm > x > 50cm, state 3: 50cm > x > 25cm, state 4: 25m > x
+musicNote VAR Word 'the LCD code for a note that will play if need be (220 - 231 for the note) | (215 - 219 set the scale)
+
+DIRL = %11111111
+SEROUT 14, 84, [24, 17, 12] 'Turn on LCD and Backlight, clear screen
+PAUSE 5
+
+DO
+  GOSUB measureAndDisplayDistance
+
+  GOSUB determineState
+
+  GOSUB changeLightsAndMessage
+
+  ' Pay notes with the switching of lights
+  ' Move a servo in close up state
+
+LOOP
+
+'-------------------------Subroutines----------------------------
+
+measureAndDisplayDistance:
+  PULSOUT 13, 5
+  PULSIN 13, 1, pingTime
+  cmDistance = pingTime ** 2260 'Convert the distance into CM
+
+  SEROUT 14, 84, [168, "Distance: ", DEC3 cmDistance, " cm"]
+RETURN
+
+determineState:
+  IF cmDistance >= 150 THEN
+    state = 0
+  ELSEIF cmDistance >= 100 THEN
+    state = 1
+  ELSEIF cmDistance >= 50 THEN
+    state = 2
+  ELSEIF cmDistance >= 25 THEN
+    state = 3
+  ELSE
+    state = 4
+  ENDIF
+RETURN
+
+changeLightsAndMessage:
+  SELECT state
+
+  CASE 0:
+    OUTL = %00001001 'Both green on and solid
+    SEROUT 14, 84, [128, "Move UP     "]
+  CASE 1:
+    OUTL = %00001001 'Green lights flash in alternating way and sound
+    SEROUT 14, 84, [128, "Move Slowly "]
+  CASE 2:
+    OUTL = %00010010 'Yellow lights flash in alternating way and sound
+    SEROUT 14, 84, [128, "CAUTION     "]
+  CASE 3:
+    OUTL = %00100100 'Red lights flash in alternating way and sound
+    SEROUT 14, 84, [128, "Stop Now!   "]
+  CASE 4:
+    OUTL = %00100100 'Red lights flash in alternating way and sound
+    SEROUT 14, 84, [128, "Stop Now!   "]
+    ' Wave a flag too!!!
+  ENDSELECT
+
+RETURN
