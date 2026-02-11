@@ -13,9 +13,15 @@
 'Pin 15 - Servo
 
 pingTime VAR Word 'return variable for PING sensor
+time VAR Word 'Used for keeping things smooth while flashing
 cmDistance VAR Word 'distance in cm
 state VAR Byte 'state 0: x > 150cm, state 1: 150cm > x > 100cm, state 2: 99cm > x > 50cm, state 3: 50cm > x > 25cm, state 4: 25m > x
 musicNote VAR Word 'the LCD code for a note that will play if need be (220 - 231 for the note) | (215 - 219 set the scale)
+musicScale VAR Word
+motorPosition VAR Word 'the position the servo should be aiming at
+motorPosition = 400
+flipBit VAR Bit 'a bit that willgo between 0 and 1 to keep track of which side is lit up for "railroad" like lights
+flipBit = 0
 
 DIRL = %11111111
 SEROUT 14, 84, [24, 17, 12] 'Turn on LCD and Backlight, clear screen
@@ -26,10 +32,16 @@ DO
 
   GOSUB determineState
 
+  LOOKUP cmDistance / 30, [219,218,217,216,215], musicScale 'Take the range of distance and convert it into 7 notes on 5 different scales
+  LOOKUP (cmDistance / 5) // 6, [231,229,227,225,224,222,220], musicNote
+
   GOSUB changeLightsAndMessage
 
-  ' Pay notes with the switching of lights
-  ' Move a servo in close up state
+  GOSUB flashLights
+
+  IF state = 4 THEN
+    PULSOUT 15, motorPosition
+  ENDIF
 
 LOOP
 
@@ -50,7 +62,7 @@ determineState:
     state = 1
   ELSEIF cmDistance >= 50 THEN
     state = 2
-  ELSEIF cmDistance >= 25 THEN
+  ELSEIF cmDistance >= 20 THEN
     state = 3
   ELSE
     state = 4
@@ -64,18 +76,83 @@ changeLightsAndMessage:
     OUTL = %00001001 'Both green on and solid
     SEROUT 14, 84, [128, "Move UP     "]
   CASE 1:
-    OUTL = %00001001 'Green lights flash in alternating way and sound
+    IF flipBit = 0 THEN
+      OUTL = %00000001 'Green lights flash in alternating way and sound
+    ELSE
+      OUTL = %00001000
+    ENDIF
     SEROUT 14, 84, [128, "Move Slowly "]
+    'GOSUB flashLights
   CASE 2:
-    OUTL = %00010010 'Yellow lights flash in alternating way and sound
+    IF flipBit = 0 THEN
+      OUTL = %00000010 'Yellow lights flash in alternating way and sound
+    ELSE
+      OUTL = %00010000
+    ENDIF
     SEROUT 14, 84, [128, "CAUTION     "]
+    'GOSUB flashLights
   CASE 3:
-    OUTL = %00100100 'Red lights flash in alternating way and sound
+    IF flipBit = 0 THEN
+      OUTL = %00000100 'Red lights flash in alternating way and sound
+    ELSE
+      OUTL = %00100000
+    ENDIF
     SEROUT 14, 84, [128, "Stop Now!   "]
+    'GOSUB flashLights
   CASE 4:
-    OUTL = %00100100 'Red lights flash in alternating way and sound
+    IF flipBit = 0 THEN
+      OUTL = %00000100 'Red lights flash in alternating way and sound
+    ELSE
+      OUTL = %00100000
+    ENDIF
     SEROUT 14, 84, [128, "Stop Now!   "]
     ' Wave a flag too!!!
   ENDSELECT
 
+RETURN
+
+flashLights:
+  IF flipBit = 0 THEN
+    flipBit = 1
+    musicNote = musicNote + 1
+  ELSE
+    flipBit = 0
+  ENDIF
+
+  IF musicNote > 231 THEN
+    musicNote = 220
+    musicScale = musicScale + 1
+  ENDIF
+
+  SELECT state
+
+  CASE 1:
+    TOGGLE 0
+    TOGGLE 3
+    SEROUT 14, 84, [209, musicScale, musicNote]
+    PAUSE cmDistance * 2
+  CASE 2:
+    TOGGLE 1
+    TOGGLE 4
+    SEROUT 14, 84, [209, musicScale, musicNote]
+    PAUSE cmDistance * 2
+  CASE 3:
+    TOGGLE 2
+    TOGGLE 5
+    SEROUT 14, 84, [209, musicScale, musicNote]
+    PAUSE cmDistance * 2
+  CASE 4:
+    TOGGLE 2
+    TOGGLE 5
+    SEROUT 14, 84, [209, musicScale, musicNote]
+
+    motorPosition = motorPosition + 150
+    IF motorPosition > 1100 THEN
+      motorPosition = 300
+    ENDIF
+    PULSOUT 15, motorPosition
+
+    PAUSE (cmDistance * 2) + 10
+
+  ENDSELECT
 RETURN
