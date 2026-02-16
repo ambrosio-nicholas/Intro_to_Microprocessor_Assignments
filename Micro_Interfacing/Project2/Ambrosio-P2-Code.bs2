@@ -82,7 +82,6 @@ changeLightsAndMessage:
       OUTL = %00001000
     ENDIF
     SEROUT 14, 84, [128, "Move Slowly "]
-    'GOSUB flashLights
   CASE 2:
     IF flipBit = 0 THEN
       OUTL = %00000010 'Yellow lights flash in alternating way and sound
@@ -90,7 +89,6 @@ changeLightsAndMessage:
       OUTL = %00010000
     ENDIF
     SEROUT 14, 84, [128, "CAUTION     "]
-    'GOSUB flashLights
   CASE 3:
     IF flipBit = 0 THEN
       OUTL = %00000100 'Red lights flash in alternating way and sound
@@ -98,15 +96,13 @@ changeLightsAndMessage:
       OUTL = %00100000
     ENDIF
     SEROUT 14, 84, [128, "Stop Now!   "]
-    'GOSUB flashLights
   CASE 4:
     IF flipBit = 0 THEN
       OUTL = %00000100 'Red lights flash in alternating way and sound
     ELSE
       OUTL = %00100000
     ENDIF
-    SEROUT 14, 84, [128, "Stop Now!   "]
-    ' Wave a flag too!!!
+    SEROUT 14, 84, [128, "Stop Now!   "] 'Needs to be flashing on and on
   ENDSELECT
 
 RETURN

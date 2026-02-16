@@ -1,0 +1,121 @@
+' Nicholas Ambrosio - Project 3 - Due: Feb 19, 2026
+' {$STAMP BS2}
+' {$PBASIC 2.5}
+
+row VAR Nib 'for row counting
+column VAR Nib 'for column counting
+keypad VAR Word 'keypad output
+temp VAR Nib ' Variable space for polling column states
+presses VAR Word 'holds how many times the keys have been pressed
+validValue VAR Bit
+noSpaces VAR Bit
+
+noSpaces = 0 'a bit to determine if there should be spaces or not
+
+SEROUT 14, 84,[22,17,209,12] 'Turn on the LCD, Turn on the Backlight, Set the notes to 1/32 notes, Clear the screen
+PAUSE 5
+
+DO
+  GOSUB ReadKeypad ' Read keypad button states
+
+  IF presses > 80 THEN
+    SEROUT 14, 84, [12] 'Clear the screen if it gets full
+    PAUSE 5
+    presses = 1 'There will already be a character onscreen
+  ENDIF
+
+  GOSUB UpdateLCD
+LOOP
+
+' --------------Subroutines---------------------
+ReadKeypad:
+  keypad = 0
+  OUTL = %00000000 ' Initialize IO
+  DIRL = %00000000
+  FOR row = 0 TO 3
+    DIRB = %1111 ' Set columns (P7-P4) as outputs
+    OUTB = %0000 ' Pull columns low (act as pull down)
+    OUTA = 1 << row ' Set rows high one by one
+    DIRA = 1 << row
+    temp = 0 ' Reset temp variable to 0
+    FOR column = 0 TO 3
+      INPUT (column + 4) ' Set columns as inputs
+      temp = temp | (INB & (1 << column)) ' Poll column state and store in temp
+    NEXT
+    keypad = keypad << 4 | (Temp REV 4) ' Store keypad value
+  NEXT
+  IF keypad > 0 THEN
+    presses = presses + 1
+  ENDIF
+RETURN
+
+UpdateLCD:
+  validValue = 0
+  IF keypad = 0 THEN
+  ELSE
+    SELECT keypad
+
+    CASE 1:
+      validValue = 1
+      SEROUT 14, 84, [219, 223, "D"]
+    CASE 2:
+      validValue = 1
+      SEROUT 14, 84, [219, 222, "#"]
+    CASE 4:
+      validValue = 1
+      SEROUT 14, 84, [219, 221, "0"]
+    CASE 8:
+      validValue = 1
+      SEROUT 14, 84, [219, 220, "*"]
+    CASE 16:
+      validValue = 1
+      SEROUT 14, 84, [218, 231, "C"]
+    CASE 32:
+      validValue = 1
+      SEROUT 14, 84, [218, 230, "9"]
+    CASE 64:
+      validValue = 1
+      SEROUT 14, 84, [218, 229, "8"]
+    CASE 128:
+      validValue = 1
+      SEROUT 14, 84, [218, 228, "7"]
+    CASE 256:
+      validValue = 1
+      SEROUT 14, 84, [218, 227, "B"]
+    CASE 512:
+      validValue = 1
+      SEROUT 14, 84, [218, 226, "6"]
+    CASE 1024:
+      validValue = 1
+      SEROUT 14, 84, [218, 225, "5"]
+    CASE 2048:
+      validValue = 1
+      SEROUT 14, 84, [218, 224, "4"]
+    CASE 4096:
+      validValue = 1
+      SEROUT 14, 84, [218, 223, "A"]
+    CASE 8192:
+      validValue = 1
+      SEROUT 14, 84, [218, 222, "3"]
+    CASE 16384:
+      validValue = 1
+      SEROUT 14, 84, [218, 221, "2"]
+    CASE 32768:
+      validValue = 1
+      SEROUT 14, 84, [218, 220, "1"]
+
+    ENDSELECT
+
+    IF validValue = 0 THEN 'If you pressed more than one button at a time, it won't count towards the LCD reset count
+      presses = presses - 1
+    ENDIF
+
+    IF noSpaces = 0 THEN 'If you have spaces, count the space as a cahracter
+      SEROUT 14, 84, [" "]
+      presses = presses + 1
+    ENDIF
+
+    PAUSE 200 'Button debounce
+  ENDIF
+
+RETURN
