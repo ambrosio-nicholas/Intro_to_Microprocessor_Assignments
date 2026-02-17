@@ -1,0 +1,13 @@
+'This program just takes input from the debug terminal and scales it to show how scaling can work
+'{$STAMP BS2}
+'{$PBASIC 2.5}
+value VAR Word
+
+DEBUG CLS, "Enter values (1875 to 3125)...", CR
+
+DO
+  DEBUG ">"
+  DEBUGIN DEC value
+  value = (value MIN 1875 MAX 3125) - 1875 ** 13369 - 127
+  DEBUG "scaled to ", SDEC value, CR
+LOOP

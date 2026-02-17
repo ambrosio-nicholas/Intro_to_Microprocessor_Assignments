@@ -1,0 +1,15 @@
+'{$STAMP BS2}
+'{$PBASIC 2.5}
+x VAR Word
+y VAR Word
+
+DEBUG CLS
+
+DO
+  PULSIN 6, 1, x
+  PULSIN 7, 1, y
+
+  DEBUG HOME, DEC4 ? X, DEC4 ? Y
+
+  PAUSE 100
+LOOP

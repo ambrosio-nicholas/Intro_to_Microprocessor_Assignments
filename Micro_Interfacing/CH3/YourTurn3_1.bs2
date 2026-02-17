@@ -1,0 +1,11 @@
+'This program just takes input a variable and tells you about it's properties to explain negative numbers
+'{$STAMP BS2}
+'{$PBASIC 2.5}
+value VAR Word
+value = -2 ' Use this to cahnge the value
+
+DEBUG "you entered decimal: ", DEC value, CR
+DEBUG "signed decimal: ", SDEC value, CR
+DEBUG "16-bit binary: ", BIN16 value, CR
+
+END

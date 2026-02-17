@@ -1,0 +1,17 @@
+'{$STAMP BS2}
+'{$PBASIC 2.5}
+x VAR Word
+y VAR Word
+
+' Initialize LCD
+PAUSE 200
+SEROUT 14, 84, [22, 12]
+PAUSE 5
+
+DO
+  PULSIN 6, 1, x
+  PULSIN 7, 1, y
+
+  SEROUT 14, 84, [128, DEC4 ? X, DEC4 ? Y]
+  PAUSE 100
+LOOP

@@ -1,0 +1,27 @@
+'This program just calulcates some values to show more scaling at work
+'{$STAMP BS2}
+'{$PBASIC 2.5}
+value VAR Word
+
+DEBUG "__________________________________________", CR,
+      "VALUE | **Scale Constant | Integer Results", CR
+
+FOR value = 0 TO 10
+  DEBUG DEC2 value, "      x 0.2999 =         ", DEC5 value ** 19660, CR
+
+NEXT
+
+END
+
+' The rest of the calculated values are as follows
+' 0: 0
+' 1: .2999
+' 2: .5998
+' 3: .8997
+' 4: 1.1996
+' 5: 1.4995
+' 6: 1.7994
+' 7: 2.0993
+' 8: 2.3992
+' 9: 2.6991
+' 10: 2.999

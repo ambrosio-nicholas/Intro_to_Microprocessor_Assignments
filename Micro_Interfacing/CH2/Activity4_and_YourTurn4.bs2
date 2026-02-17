@@ -1,0 +1,24 @@
+' {$STAMP BS2}
+' {$PBASIC 2.5}
+x VAR Word
+y VAR Word
+
+DO
+  PULSIN 6, 1, x
+  PULSIN 7, 1, y
+
+  x = ((x MIN 1865 MAX 3140) - 1865) ** 10337 - 100
+  y = ((y MIN 1865 MAX 3140) - 1865) ** 10337 - 100
+
+  SEROUT 14, 84, [12, 128, SDEC3 ? X, 136, "/100 g", 148,  SDEC3 ? Y, 156, "/100 g"]
+  PAUSE 100
+LOOP
+
+
+' Highest x = 3140
+' Middle x = 2450
+' Lowest x = 1865
+
+' Highest y = 3140
+' Middle y = 2500
+' Lowest y =1865
