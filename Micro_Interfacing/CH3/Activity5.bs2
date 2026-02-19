@@ -1,0 +1,18 @@
+' This program converts an x and y value to brads and degrees.
+'{$STAMP BS2}
+'{$PBASIC 2.5}
+angle VAR Word
+x VAR Word
+y VAR Word
+
+DO
+  DEBUG "Enter y: "
+  DEBUGIN SDEC y
+  DEBUG "Enter x: "
+  DEBUGIN SDEC x
+
+  angle = x ATN y
+  DEBUG "brad ", SDEC ? angle
+  angle = angle */ 361
+  DEBUG "degree ", SDEC ? angle, CR
+LOOP

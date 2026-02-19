@@ -1,0 +1,25 @@
+' {$STAMP BS2}
+' {$PBASIC 2.5}
+degrees VAR Word
+brads VAR Word
+sine VAR Word
+cosine VAR Word
+
+DEBUG "Degrees Brads Cosine Sine", CR
+
+FOR degrees = 0 TO 359 STEP 5
+  brads = degrees ** 46733
+  sine = SIN brads
+  cosine = COS brads
+
+  DEBUG " ",SDEC3 degrees, " ",SDEC3 brads, " ",SDEC3 cosine, " ",SDEC3 sine, CR
+
+NEXT
+
+DO
+  DEBUG HOME, "Enter Brad Value (0-128): "
+  DEBUGIN SDEC brads
+  sine = SIN brads
+  cosine = COS brads
+  DEBUG " ",SDEC3 degrees, " ",SDEC3 brads, " ",SDEC3 cosine, " ",SDEC3 sine, CR
+LOOP

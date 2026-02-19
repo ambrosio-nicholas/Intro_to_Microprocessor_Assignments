@@ -1,0 +1,19 @@
+'{$STAMP BS2}
+'{$PBASIC 2.5}
+
+angle VAR Word
+x VAR Word
+y VAR Word
+
+DO
+  PULSIN 6, 1, x
+  PULSIN 7, 1, y
+  x = (x MIN 1875 MAX 3125) - 1875 ** 13369 - 127
+  y = (y MIN 1875 MAX 3125) - 1875 ** 13369 - 127
+  angle = x ATN y
+  angle = angle */ 361
+  DEBUG CLS, SDEC ? x, CLREOL, SDEC ? y, "angle = ", CLREOL, DEC angle, 176 ' ASCII 176 is degree symbol
+  PAUSE 100
+LOOP
+
+'The lack of CLREOL makes a very bad viewin experience..

@@ -2,7 +2,7 @@
 '{$STAMP BS2}
 '{$PBASIC 2.5}
 value VAR Word
-value = -2 ' Use this to cahnge the value
+value = 150 ' Use this to cahnge the value
 
 DEBUG "you entered decimal: ", DEC value, CR
 DEBUG "signed decimal: ", SDEC value, CR

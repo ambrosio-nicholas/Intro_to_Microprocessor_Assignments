@@ -1,0 +1,70 @@
+' {$STAMP BS2} ' BASIC Stamp Directive
+' {$PBASIC 2.5} ' PBASIC Directive
+
+' This Your Turn is to make sure the angles actually reach 90 degrees, and it already does, so this is the same as the last one
+
+' -----[ Constants ]----------------------------------------------------------
+Negative CON 1 ' Sign - .bit15 of Word variables
+Positive CON 0
+' -----[ Variables ]----------------------------------------------------------
+x VAR Word ' Memsic x-axis measurement
+y VAR Word ' Memsic y-axis measurement
+side VAR Word ' trig subroutine variable
+angle VAR Word ' result angle - degrees
+sign VAR Bit ' Sign bit
+' -----[ Initialization ]-----------------------------------------------------
+' Initialize LCD
+PAUSE 200
+SEROUT 14, 84, [22, 12]
+PAUSE 5
+SEROUT 14, 84, [128, "x-tilt=",
+148, "y-tilt="]
+SEROUT 14, 84, [255, ' Define Custom Character 7
+%01000, ' *
+%10100, ' * *
+%01000, ' *
+%00000, '
+%00000, '
+%00000, '
+%00000, '
+%00000] '
+' -----[ Main Routine ]-------------------------------------------------------
+DO
+PULSIN 6, 1, x ' x-axis measurement
+PULSIN 7, 1, y ' y-axis measurement
+' Scale and offset x and y-axis values to -127 to 127.
+x = (x MIN 1875 MAX 3125) - 1875 ** 13369 - 127
+y = (y MIN 1875 MAX 3125) - 1875 ** 13369 - 127
+' Calculate and display Arcsine of x-axis measurement.
+side = x
+GOSUB Arcsine
+SEROUT 14, 84, [135, "    ", 135, SDEC angle, 7]
+' Calculate and display Arcsine of y-axis measurement.
+side = y
+GOSUB Arcsine
+SEROUT 14, 84, [155, " ", 155, SDEC angle, 7]
+PAUSE 350
+LOOP ' Repeat DO...LOOP
+' -----[ Subroutine - Arcsine ]-----------------------------------------------
+' This subroutine calculates arcsine based on the y coordinate on a circle
+' of radius 127. Set the side variable equal to your y coordinate before
+' calling this subroutine.
+Arcsine: ' Inverse sine subroutine
+GOSUB Arccosine ' Get inverse cosine
+angle = 90 - angle ' sin(angle) = cos(90 - angle)
+RETURN
+' -----[ Subroutine - Arccosine ]---------------------------------------------
+' This subroutine calculates arccosine based on the x coordinate on a circle
+' of radius 127. Set the side variable equal to your x coordinate before
+' calling this subroutine.
+Arccosine: ' Inverse cosine subroutine
+sign = side.BIT15 ' Save sign of side
+side = ABS(side) ' Evaluate positive side
+angle = 63 - (side / 2) ' Initial angle approximation
+DO ' Successive approximation loop
+IF (COS angle <= side) THEN EXIT ' Done when COS angle <= side
+angle = angle + 1 ' Keep increasing angle
+LOOP
+angle = angle */ 361 ' Convert brads to degrees
+IF sign = Negative THEN angle = 180 - angle' Adjust if sign is negative.
+RETURN

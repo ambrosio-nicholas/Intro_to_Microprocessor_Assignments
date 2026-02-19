@@ -1,0 +1,33 @@
+'{$STAMP BS2}
+'{$PBASIC 2.5}
+angle VAR Word
+angleOld VAR Word
+x VAR Word
+y VAR Word
+turnCount VAR Word
+
+PAUSE 250 ' Initialize LCD
+SEROUT 14, 84, [22, 12]
+PAUSE 5
+SEROUT 14, 84, [128, DEC5 turnCount]
+
+DO
+  PULSIN 6, 1, x
+  PULSIN 7, 1, y
+  x = (x MIN 1875 MAX 3125) - 1875 ** 13369 - 127
+  y = (y MIN 1875 MAX 3125) - 1875 ** 13369 - 127
+  angle = x ATN y
+  angle = angle */ 361
+
+  IF (angle >= 90 AND angle < 180) AND (angleOld < 90 OR angleOld >= 270) THEN
+    turnCount = turnCount + 1
+    angleOld = angle
+  ENDIF
+
+  IF angle >= 270 AND (angleOld >= 90 AND angleOld < 180) THEN
+    turnCount = turnCount + 1
+    angleOld = angle
+  ENDIF
+
+  SEROUT 14, 84, [128, DEC5 (turnCount / 2)]
+LOOP

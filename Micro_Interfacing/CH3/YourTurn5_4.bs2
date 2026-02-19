@@ -1,0 +1,36 @@
+'{$STAMP BS2}
+'{$PBASIC 2.5}
+
+angle VAR Word
+x VAR Word
+y VAR Word
+
+PAUSE 200
+SEROUT 14, 84, [22, 12, 17]
+PAUSE 5
+SEROUT 14, 84, [130, "angle = ", DEC3 angle,7,150, "x=", SDEC x,157, "y=", SDEC y ]
+SEROUT 14, 84, [255, ' Define Custom Character 7
+%01000, '   *
+%10100, ' *   *
+%01000, '   *
+%00000, '
+%00000, '
+%00000, '
+%00000, '
+%00000] '
+
+DO
+  PULSIN 6, 1, x
+  PULSIN 7, 1, y
+  x = (x MIN 1875 MAX 3125) - 1875 ** 13369 - 127
+  y = (y MIN 1875 MAX 3125) - 1875 ** 13369 - 127
+  angle = x ATN -y
+  angle = angle */ 361
+
+  ' LCD Display Routine
+  SEROUT 14, 84, [ 138, " ", 138, DEC angle, 7, 152, " ", 152, SDEC x, 159, " ", 159, SDEC y ]
+
+  PAUSE 350
+LOOP
+
+'The lack of CLREOL makes a very bad viewin experience..

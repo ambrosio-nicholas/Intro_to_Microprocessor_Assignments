@@ -1,0 +1,33 @@
+' {$STAMP BS2}
+' {$PBASIC 2.5}
+
+angleRoll VAR Word
+x VAR Word
+y VAR Word
+
+PAUSE 100
+SEROUT 14, 84, [22, 12, 17]
+PAUSE 5
+
+DO
+  ' Get accelerometer values
+  PULSIN 6, 1, x
+  PULSIN 7, 1, y
+
+  x = (x MIN 1865 MAX 3125) - 1865 ** 13369 - 127
+  y = (y MIN 1865 MAX 3125) - 1865 ** 13369 - 127
+
+  angleRoll = x ATN y
+  angleRoll = (angleRoll */ 361) / 2' Convert to 360 degrees instead of brads
+
+  SEROUT 14, 84, [128, "Tilt: " ,SDEC3 angleRoll]
+
+  IF angleRoll > 100 OR angleRoll < 80 THEN
+    HIGH 15
+    SEROUT 14, 84, [148, "DANGER!"]
+  ELSE
+    LOW 15
+    SEROUT 14, 84, [148, "       "]
+  ENDIF
+
+LOOP
