@@ -1,0 +1,281 @@
+' Nicholas Ambrosio - Project 4 - Due: March 5, 2026
+' {$STAMP BS2}
+' {$PBASIC 2.5}
+
+' Pin 15 is Ping Sensor
+' Pin 14 is LCD
+' Pin 13 is Servo
+' Pin 12 is E-Stop Button
+' Pin 11 is GreenLED
+' Pin 10 is YellowLED_1
+' Pin 9 is YellowLED_2
+' Pin 8 is RedLED
+' Pins 0-7 are Keypad
+
+'--------------------------Variables-----------------------------------
+
+' Ping sensor variables
+pingDistance VAR Word ' a variable for the distance the ping sensor picks up
+
+' Passcode variables
+isHash VAR Bit ' a variable that tracks if the hash button has been entered
+isStar VAR Bit ' a variable that tracks if the star button has been entered
+codeLength VAR Byte ' used to determine how long a code is that the user is entering (also used for indexing if the length is right)
+correctPassword VAR Bit ' used to track if the correct password is entered
+openPasscode VAR Byte(6) ' this is the passcode needed to open the store up
+openPasscode(0) = 0
+openPasscode(1) = 1
+openPasscode(2) = 2
+openPasscode(3) = 3
+openPasscode(4) = 4
+openPasscode(5) = 5
+closePasscode VAR Byte(6) ' this is the passcode needed to close everything down
+closePasscode(0) = 0
+closePasscode(1) = 1
+closePasscode(2) = 2
+closePasscode(3) = 3
+closePasscode(4) = 4
+closePasscode(5) = 5
+userPasscode VAR Byte(6) ' this is the array that hold the user's input
+
+' Keyboard Variables
+row VAR Nib 'for row counting
+column VAR Nib 'for column counting
+keypad VAR Word 'keypad output
+temp VAR Nib ' Variable space for polling column states
+
+' Door Variables
+doorState VAR Nib ' 0 = Closed, 1 = Open, 2 = Closing, 3 = Opening
+
+'-----------------------------------------Program-------------------------------------------------
+main:
+
+SEROUT 14, 84, [22,12,17] ' Turn on, clear, and backlight the LCD (LCD is on pin 14)
+PAUSE 150
+
+DO
+  ' Make sure the door is closed
+  GOSUB closeDoor
+  ' Wait to start normal operations until the store/door opens
+  GOSUB enterOpenCode
+
+  ' Operate door in normal conditions
+  DO
+    GOSUB getDistance
+
+    IF pingDistance <= 100 THEN
+      GOSUB openDoor
+    ELSE
+      GOSUB closeDoor
+    ENDIF
+
+    ' When the door is closed, user should be able to enter the close code
+    ' Reset the system if * and # are pressed and door is closed, and correct password
+
+  LOOP
+
+LOOP
+
+
+' -----------------------------------------SubRoutines-----------------------------------------------
+openDoor:
+
+  GOSUB checkEStop
+
+RETURN
+'------------------------------------------------------
+closeDoor:
+
+  GOSUB checkEStop
+
+RETURN
+'------------------------------------------------------
+checkEStop:
+  ' Check the button and Go into Emergency mode if pressed
+  IF IN12 = 1 THEN
+    DO 'Debounce to make sure we let the button go
+    LOOP UNTIL IN12 = 0
+
+    SEROUT 14, 84, [12, "EMERGENCY!!!", 168, "DOOR IS OPEN", 188, "PRESS AGAIN TO CONT"]
+    GOSUB openDoor
+
+    DO
+    ' FLASH EMERGENCY and LIGHT UNTIL ESTOP is PRESSED AGAIN********************************************************************************
+
+    LOOP UNTIL IN12 = 1
+
+    GOSUB closeDoor
+
+  ENDIF
+
+RETURN
+'------------------------------------------------------
+enterOpenCode:
+  DO
+    ' Get the correct 6 digit alpha-numeric code followed by #, and open the door.
+    SEROUT 14, 84, [12, "Enter Passcode: "]
+
+    codeLength = 0
+    isHash = 0
+
+    DO
+      GOSUB checkEStop
+      GOSUB readAndDisplayKeypad
+    LOOP UNTIL isHash = 1
+
+    ' Compare the entered passCode and the stored one
+    IF NOT codeLength = 6 THEN
+      ' Not the right length, can't be the right password
+    ELSE
+      ' Is the right length, lets see if the passwords match (re-use codelength since we've already determined it's correct)
+      FOR codeLength = 0 TO 6
+        IF userPasscode(codeLength) = openPasscode(codeLength) THEN
+          correctPassword = 1
+        ELSE
+          correctPassword = 0
+        ENDIF
+      NEXT
+    ENDIF
+
+    IF correctPassword = 0 THEN
+      SEROUT 14, 84, [12, "WRONG PASSCODE", 168, "TRY AGAIN"]
+      PAUSE 100
+    ENDIF
+
+  LOOP UNTIL correctPassword = 1
+
+  isHash = 0
+  isStar = 0
+  GOSUB openDoor
+
+RETURN
+'------------------------------------------------------
+enterCloseCode:
+  DO
+    ' Get the correct 6 digit alpha-numeric code followed by #, and open the door.
+    SEROUT 14, 84, [12, "Enter Passcode: "]
+
+    codeLength = 0
+    isStar = 0
+
+    DO
+      GOSUB checkEStop
+      GOSUB readAndDisplayKeypad
+    LOOP UNTIL isStar = 1
+
+    ' Compare the entered passCode and the stored one
+    IF NOT codeLength = 6 THEN
+      ' Not the right length, can't be the right password
+    ELSE
+      ' Is the right length, lets see if the passwords match (re-use codelength since we've already determined it's correct)
+      FOR codeLength = 0 TO 6
+        IF userPasscode(codeLength) = closePasscode(codeLength) THEN
+          correctPassword = 1
+        ELSE
+          correctPassword = 0
+        ENDIF
+      NEXT
+    ENDIF
+
+    IF correctPassword = 0 THEN
+      SEROUT 14, 84, [12, "WRONG PASSCODE", 168, "TRY AGAIN"]
+      PAUSE 100
+    ENDIF
+
+  LOOP UNTIL correctPassword = 1
+
+  isStar = 0
+  isHash = 0
+  GOSUB main
+
+RETURN
+'------------------------------------------------------
+readAndDisplayKeypad:
+  keypad = 0
+  OUTL = %00000000 ' Initialize IO
+  DIRL = %00000000
+  FOR row = 0 TO 3
+    DIRB = %1111 ' Set columns (P7-P4) as outputs
+    OUTB = %0000 ' Pull columns low (act as pull down)
+    OUTA = 1 << row ' Set rows high one by one
+    DIRA = 1 << row
+    temp = 0 ' Reset temp variable to 0
+    FOR column = 0 TO 3
+      INPUT (column + 4) ' Set columns as inputs
+      temp = temp | (INB & (1 << column)) ' Poll column state and store in temp
+    NEXT
+    keypad = keypad << 4 | (Temp REV 4) ' Store keypad value
+  NEXT
+
+  ' If a key is being pressed:
+  IF keypad > 0 THEN
+    ' Store each keypress into a passcode, and update the codeLength with each press. Note when a hash or a star are entered
+    ' Make sure to not affect any overflow (store passcode in the index // 6)
+    SELECT keypad
+
+    CASE 1:
+      userPasscode(codeLength//6) = "D"
+      SEROUT 14, 84, [219, 223, "D"]
+    CASE 2:
+      isHash = 1
+      codeLength = codeLength - 1 'Make sure the hash didnt count as part of the code
+      SEROUT 14, 84, [219, 222, "#"]
+    CASE 4:
+      userPasscode(codeLength//6) = 0
+      SEROUT 14, 84, [219, 221, "0"]
+    CASE 8:
+      isStar = 1
+      codeLength = codeLength - 1 'Make sure the star didnt count as part of the code
+      SEROUT 14, 84, [219, 220, "*"]
+    CASE 16:
+      userPasscode(codeLength//6) = "C"
+      SEROUT 14, 84, [218, 231, "C"]
+    CASE 32:
+      userPasscode(codeLength//6) = 9
+      SEROUT 14, 84, [218, 230, "9"]
+    CASE 64:
+      userPasscode(codeLength//6) = 8
+      SEROUT 14, 84, [218, 229, "8"]
+    CASE 128:
+      userPasscode(codeLength//6) = 7
+      SEROUT 14, 84, [218, 228, "7"]
+    CASE 256:
+        userPasscode(codeLength//6) = "B"
+      SEROUT 14, 84, [218, 227, "B"]
+    CASE 512:
+      userPasscode(codeLength//6) = 6
+      SEROUT 14, 84, [218, 226, "6"]
+    CASE 1024:
+      userPasscode(codeLength//6) = 5
+      SEROUT 14, 84, [218, 225, "5"]
+    CASE 2048:
+      userPasscode(codeLength//6) = 4
+      SEROUT 14, 84, [218, 224, "4"]
+    CASE 4096:
+      userPasscode(codeLength//6) = "A"
+      SEROUT 14, 84, [218, 223, "A"]
+    CASE 8192:
+      userPasscode(codeLength//6) = 3
+      SEROUT 14, 84, [218, 222, "3"]
+    CASE 16384:
+      userPasscode(codeLength//6) = 2
+      SEROUT 14, 84, [218, 221, "2"]
+    CASE 32768:
+      userPasscode(codeLength//6) = 1
+      SEROUT 14, 84, [218, 220, "1"]
+
+    ENDSELECT
+
+    codeLength = codeLength + 1
+
+  ENDIF
+
+RETURN
+'------------------------------------------------------
+getDistance:
+  PULSOUT 15, 5
+  PULSIN 15, 1, pingDistance
+
+  ' Convert the raw value into cm Distance
+  pingDistance = pingDistance ** 2260
+RETURN
