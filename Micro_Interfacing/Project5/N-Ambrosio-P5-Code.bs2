@@ -1,0 +1,95 @@
+' Nicholas Ambrosio - Project 5 - Due: Mar 3, 2026
+' {$STAMP BS2}
+' {$PBASIC 2.5}
+
+'------------------------- Pinouts ---------------------------------
+' Pin 15 = Servo
+' Pin 14 = LCD
+' Pin 11 = Flex Sensor
+' Pins 0-9 = LEDs
+'------------------------ Variables --------------------------------
+
+position VAR Word
+state VAR Nib
+angle VAR Word
+
+'-------------------------- Main Code ------------------------------
+SEROUT 14, 84, 50, [22,12,17,"Angle = XXX Degrees", 209] 'Commands: [Turn on, clear screen, backlight on, TEXT, set tone length]
+PAUSE 100
+
+DIRS = %1111111111111111
+
+DO
+
+  GOSUB getAngle
+
+  SEROUT 14, 84, [136, DEC3 angle]
+
+  state = angle / 18 ' This will get a state between 0 and 10 (11 total)
+
+  GOSUB setLightsPlayTones
+
+  GOSUB pulseMotor
+
+LOOP
+
+
+'------------------------- Subroutines -----------------------------
+
+getAngle:
+  HIGH 11 ' Charge the capacitor for 5ms
+  PAUSE 15
+
+  RCTIME 11, 1, angle ' Store the raw time value (Highest: 1300 (bent), Lowest: 200 (straight))
+
+  angle = (((angle MIN 200 MAX 1300) - 200) ** 10784) MAX 180 ' Converts the time value into an angle based on scaling factor (it was going to so I cap it at 180)
+RETURN
+
+pulseMotor:
+  ' We need to convert the angles into a position for the servo (300 is about 0 degrees, and 1250 is about 180)
+  position = (angle */ 1353) + 300 ' We add 300 for the offset after we scale it up
+  PULSOUT 15, position
+RETURN
+
+setLightsPlayTones:
+  SELECT state
+  CASE 0:
+    OUTS = %0100000000000000
+  CASE 1:
+    OUTS = %0100000000000001
+    SEROUT 14, 84, [218, 220]
+  CASE 2:
+    OUTS = %0100000000000011
+    SEROUT 14, 84, [218, 222]
+  CASE 3:
+    OUTS = %0100000000000111
+    SEROUT 14, 84, [218, 223]
+  CASE 4:
+    OUTS = %0100000000001111
+    SEROUT 14, 84, [218, 225]
+  CASE 5:
+    OUTS = %0100000000011111
+    SEROUT 14, 84, [218, 227]
+  CASE 6:
+    OUTS = %0100000000111111
+    SEROUT 14, 84, [218, 228]
+  CASE 7:
+    OUTS = %0100000001111111
+    SEROUT 14, 84, [218, 230]
+  CASE 8:
+    OUTS = %0100000011111111
+    SEROUT 14, 84, [219, 220]
+  CASE 9:
+    OUTS = %0100000111111111
+    SEROUT 14, 84, [219, 222]
+  CASE 10:
+    OUTS = %0100001111111111
+    SEROUT 14, 84, [219, 223]
+  ENDSELECT
+
+  ' We need to delay between each note otherwise it will lag behind
+  PAUSE 25
+  GOSUB pulseMotor ' Around 5ms
+  PAUSE 30
+
+RETURN

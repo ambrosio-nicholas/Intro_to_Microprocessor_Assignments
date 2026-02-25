@@ -23,19 +23,19 @@ isStar VAR Bit ' a variable that tracks if the star button has been entered
 codeLength VAR Byte ' used to determine how long a code is that the user is entering (also used for indexing if the length is right)
 correctPassword VAR Bit ' used to track if the correct password is entered
 openPasscode VAR Nib(6) ' this is the passcode needed to open the store up
-openPasscode(0) = 2
-openPasscode(1) = 3
-openPasscode(2) = 9
-openPasscode(3) = 11 'B
-openPasscode(4) = 10 'A (Like HEX)
-openPasscode(5) = 13 'D
+openPasscode(0) = 1
+openPasscode(1) = 2
+openPasscode(2) = 3
+openPasscode(3) = 10 '
+openPasscode(4) = 11 ' (Like HEX)
+openPasscode(5) = 6 '
 closePasscode VAR Nib(6) ' this is the passcode needed to close everything down
-closePasscode(0) = 0
-closePasscode(1) = 1
-closePasscode(2) = 2
-closePasscode(3) = 3
-closePasscode(4) = 4
-closePasscode(5) = 5
+closePasscode(0) = 1
+closePasscode(1) = 4
+closePasscode(2) = 5
+closePasscode(3) = 6
+closePasscode(4) = 11
+closePasscode(5) = 10
 userPasscode VAR Nib(6) ' this is the array that hold the user's input
 closeCodeTrigger VAR Bit
 
@@ -215,7 +215,6 @@ enterOpenCode:
     isHash = 0
 
     DO
-      GOSUB checkEStop
       GOSUB readAndDisplayKeypad
     LOOP UNTIL isHash = 1
 
