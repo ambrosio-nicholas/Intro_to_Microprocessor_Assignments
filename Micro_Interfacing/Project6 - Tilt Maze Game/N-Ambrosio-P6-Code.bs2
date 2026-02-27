@@ -6,8 +6,8 @@
 ' {$PBASIC 2.5}
 '-------------------------Pin Out--------------------------------
 ' Pin 14 = LCD
-' Pin 13 =
-' Pin 12 =
+' Pin 11 = y-input
+' Pin 10 = x-input
 ' Pins 0-7 = Keypad
 '--------------------------Variables-----------------------------
 ' 80 characters, 4 rows of 20. Top Left = 0, and bottom right = 79, increases going right, then down, right, then down.
@@ -23,43 +23,45 @@ currentTile VAR Byte ' the tile that the ball is on
 tempTile VAR Byte ' a temporary tile used when checking the next tile
 
 moveDir VAR Nib '0 = NO_MOVEMENT, 1 = UP, 2 = RIGHT, 3 = DOWN, 4 = LEFT (no mevement would be like running into the edge of the maze)
+x VAR Word 'x-output holder
+y VAR Word 'y-output holder
 
 '------------------------Initialization--------------------------
 PAUSE 100
 SEROUT 14, 84, 5, [22,12,17, 210] ' [Turn on LCD, Clear and go to character 0, turn on Backlight, 16th notes]
 SEROUT 14, 84, [253, %11111,%11111,%11111,%11111,%11111,%11111,%11111,%11111] ' Solid Block = Custom Char 5
 SEROUT 14, 84, [254, %00000,%10001,%01010,%00100,%01010,%10001,%00000,%00000] ' X for Finish = Custom Char 6
-SEROUT 14, 84, [255, %00000,%00000,%00000,%00000,%00000,%00000,%00000,%00000] ' Clear = Custom Char 7
 SEROUT 14, 84, [248, %00000,%00000,%00000,%01100,%01100,%00000,%00000,%00000] ' Center Ball = Custon Char 0
 SEROUT 14, 84, [249, %00000,%01100,%01100,%00000,%00000,%00000,%00000,%00000] ' UP Ball = Custon Char 1
 SEROUT 14, 84, [250, %00000,%00000,%00000,%00110,%00110,%00000,%00000,%00000] ' RIGHT Ball = Custon Char 2
 SEROUT 14, 84, [251, %00000,%00000,%00000,%00000,%00000,%00000,%01100,%01100] ' DOWN Ball = Custon Char 3
 SEROUT 14, 84, [252, %00000,%00000,%00000,%11000,%11000,%00000,%00000,%00000] ' LEFT Ball = Custon Char 4
 GOSUB drawBoard
+currentTile = 0
 
 '------------------------Game Loop-------------------------------
 
 ' Draw the player at the starting point
-currentTile = 21
 SEROUT 14, 84, [128, 0]
 
 DO
   'GET INPUT FROM USER
+  GOSUB getMoveDir
 
-  moveDir = (moveDir + 1) // 5
-
-  'CHECK IF MOVEMENT IS VALID OR GAMEOVER
+  'CHECK IF MOVEMENT IS VALID OR NOT
+  GOSUB boundsAndLoseCheck
 
   'PLAY ANIMATION W/ SOUND AND UPDATE CURRENT TILE
   GOSUB animate
-  PAUSE 500
+
+  PAUSE 25 ' Adjsut this to slow or speed up movement
 LOOP
 
 END
 
 '------------------------Subroutines-----------------------------
 drawBoard:
-  FOR currentTile = 0 TO 79
+  FOR tempTile = 0 TO 79
     GOSUB getTileType 'paramters: currentTile
     IF tileType = 0 THEN
       SEROUT 14, 84, [5] 'Draw character 0
@@ -71,13 +73,64 @@ drawBoard:
 RETURN
 '---------------------------------------------
 getTileType:
-  ix = currentTile / 8 ' Figures out which byte the data will be in
-  iy = currentTile // 8 ' Figures out which bit the data we want is
+  ix = tempTile / 8 ' Figures out which byte the data will be in
+  iy = tempTile // 8 ' Figures out which bit the data we want is
   READ ix, tileType
 
   mask = 1 << (7 - iy) ' Create a mask to get only the data we want
 
   tileType = (tileType & mask) MAX 1 ' Apply that mask and limit it to 1s and 0s
+RETURN
+'---------------------------------------------
+getMoveDir:
+  PULSIN 11, 1, y
+  PULSIN 10, 1, x
+  ' Flat is around 2500 | Y < 2300 is Forward/Up | Y > 2700 is Backward/Down | X  > 2700 is Left | X  < 2300 is Right
+  IF x > 2700 THEN
+    moveDir = 4 'Left
+  ELSEIF x < 2300 THEN
+    moveDir = 2 'Right
+  ELSEIF y > 2700 THEN
+    moveDir = 3 'Down
+  ELSEIF y <  2300 THEN
+    moveDir = 1 'Up
+  ELSE
+    moveDir = 0 'No movement
+  ENDIF
+RETURN
+'---------------------------------------------
+boundsAndLoseCheck:
+  'Lets see if the player's movement is okay, or if it warrants a game over or a stay there.
+  IF moveDir = 1 AND (currentTile < 20) THEN ' Can't go up if you're in the top row
+    moveDir = 0
+  ELSEIF moveDir = 3 AND (currentTile > 59) THEN ' Can't go down if you're in the bottom row
+    moveDir = 0
+  ELSEIF moveDir = 4 AND (currentTile // 20 = 0) THEN ' Can't go left if you're in the leftmost column
+    moveDir = 0
+  ELSEIF moveDir = 2 AND (currentTile // 20 = 19) THEN ' Can't go right if you're in the rightmost column
+    moveDir = 0
+  ELSE
+    ' If you're still good for movement, lets see if it's a wall you're going into
+    SELECT moveDir
+    CASE 0:
+      tempTile = currentTile
+    CASE 1:
+      tempTile = currentTile - 20
+    CASE 2:
+      tempTile = currentTile + 1
+    CASE 3:
+      tempTile = currentTile + 20
+    CASE 4:
+      tempTile = currentTile - 1
+    ENDSELECT
+
+    GOSUB getTileType
+
+    IF tileType = 0 THEN
+      SEROUT 14, 84, [12, " G A M E O V E R "]
+    ENDIF
+
+  ENDIF
 RETURN
 '---------------------------------------------
 animate:
@@ -92,7 +145,7 @@ animate:
     SEROUT 14, 84, [223]
     ' 1) UpPos in current tile, 2) DownPos in nextTile, 3) Clear Old tile, 4) MiddePos in nextTile
     SEROUT 14, 84, 100, [(currentTile + 128), 1, (currentTile + 108), 3]
-    SEROUT 14, 84, [(currentTile + 128), 7]
+    SEROUT 14, 84, [(currentTile + 128), " "]
     SEROUT 14, 84, 100, [(currentTile + 108), 0]
 
     currentTile = currentTile - 20
@@ -101,7 +154,7 @@ animate:
     SEROUT 14, 84, [225]
     ' Right in current Tile, Left in next tile, Clear old tile, Middle in New Tile
     SEROUT 14, 84, 100, [(currentTile + 128), 2, (currentTile + 129), 4]
-    SEROUT 14, 84, [(currentTile + 128), 7]
+    SEROUT 14, 84, [(currentTile + 128), " "]
     SEROUT 14, 84, 100, [(currentTile + 129), 0]
 
     currentTile = currentTile + 1
@@ -110,7 +163,7 @@ animate:
     SEROUT 14, 84, [227]
     ' Down in current tile, up in next tile, clear old tile, Middle in new Tile
     SEROUT 14, 84, 100, [(currentTile + 128), 3, (currentTile + 148), 1]
-    SEROUT 14, 84, [(currentTile + 128), 7]
+    SEROUT 14, 84, [(currentTile + 128), " "]
     SEROUT 14, 84, 100, [(currentTile + 148), 0]
 
     currentTile = currentTile + 20
@@ -119,7 +172,7 @@ animate:
     SEROUT 14, 84, [228]
     ' Left in current tile, right in next tile, clear old tile, Middle in new Tile
     SEROUT 14, 84, 100, [(currentTile + 128), 4, (currentTile + 127), 2]
-    SEROUT 14, 84, [(currentTile + 128), 7]
+    SEROUT 14, 84, [(currentTile + 128), " "]
     SEROUT 14, 84, 100, [(currentTile + 127), 0]
 
     currentTile = currentTile - 1
