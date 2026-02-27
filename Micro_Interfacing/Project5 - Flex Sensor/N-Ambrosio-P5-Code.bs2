@@ -12,6 +12,7 @@
 position VAR Word
 state VAR Nib
 angle VAR Word
+counter VAR Byte
 
 '-------------------------- Main Code ------------------------------
 SEROUT 14, 84, 50, [22,12,17,"Angle = XXX Degrees", 209] 'Commands: [Turn on, clear screen, backlight on, TEXT, set tone length]
@@ -30,25 +31,27 @@ DO
   GOSUB setLightsPlayTones
 
   GOSUB pulseMotor
-
 LOOP
 
 
 '------------------------- Subroutines -----------------------------
 
 getAngle:
-  HIGH 11 ' Charge the capacitor for 5ms
-  PAUSE 15
+  HIGH 11 ' Charge the capacitor for 20ms
+  PAUSE 20
 
   RCTIME 11, 1, angle ' Store the raw time value (Highest: 1300 (bent), Lowest: 200 (straight))
-
-  angle = (((angle MIN 200 MAX 1300) - 200) ** 10784) MAX 180 ' Converts the time value into an angle based on scaling factor (it was going to so I cap it at 180)
+  DEBUG ? angle
+  angle = (((angle MIN 200 MAX 1300) - 200) ** 11796) MAX 180 ' Converts the time value into an angle based on scaling factor (it was going to so I cap it at 180)/ 10784 (11796)
 RETURN
 
 pulseMotor:
   ' We need to convert the angles into a position for the servo (300 is about 0 degrees, and 1250 is about 180)
   position = (angle */ 1353) + 300 ' We add 300 for the offset after we scale it up
+  FOR counter = 0 TO 5
   PULSOUT 15, position
+  PAUSE 20
+  NEXT
 RETURN
 
 setLightsPlayTones:
@@ -88,8 +91,6 @@ setLightsPlayTones:
   ENDSELECT
 
   ' We need to delay between each note otherwise it will lag behind
-  PAUSE 25
-  GOSUB pulseMotor ' Around 5ms
-  PAUSE 30
+  PAUSE 60
 
 RETURN

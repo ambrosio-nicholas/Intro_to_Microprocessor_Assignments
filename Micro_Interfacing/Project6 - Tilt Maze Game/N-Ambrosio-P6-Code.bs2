@@ -1,0 +1,129 @@
+' Nicholas Ambrosio - Project 6 - Due: March 17, 2026
+
+' This project will make a ball-in-maze game that is controlled by a 2-axis accelerometer and displayed on an LCD
+
+' {$STAMP BS2}
+' {$PBASIC 2.5}
+'-------------------------Pin Out--------------------------------
+' Pin 14 = LCD
+' Pin 13 =
+' Pin 12 =
+' Pins 0-7 = Keypad
+'--------------------------Variables-----------------------------
+' 80 characters, 4 rows of 20. Top Left = 0, and bottom right = 79, increases going right, then down, right, then down.
+' DATA Stores in Bytes, I need 10 Bytes for the whole board (80 bits):
+board DATA %11011101, %11011101, %11010101, %01010101, %01010101, %01010101, %01010101, %01010111, %01110111, %01110111
+
+tileType VAR Byte ' Each character can be defined as death block (0) or path (1)
+mask VAR Byte ' used for reading data
+ix VAR Byte ' used for reading Bytes
+iy VAR Nib ' used for reading Bits
+
+currentTile VAR Byte ' the tile that the ball is on
+tempTile VAR Byte ' a temporary tile used when checking the next tile
+
+moveDir VAR Nib '0 = NO_MOVEMENT, 1 = UP, 2 = RIGHT, 3 = DOWN, 4 = LEFT (no mevement would be like running into the edge of the maze)
+
+'------------------------Initialization--------------------------
+PAUSE 100
+SEROUT 14, 84, 5, [22,12,17, 210] ' [Turn on LCD, Clear and go to character 0, turn on Backlight, 16th notes]
+SEROUT 14, 84, [253, %11111,%11111,%11111,%11111,%11111,%11111,%11111,%11111] ' Solid Block = Custom Char 5
+SEROUT 14, 84, [254, %00000,%10001,%01010,%00100,%01010,%10001,%00000,%00000] ' X for Finish = Custom Char 6
+SEROUT 14, 84, [255, %00000,%00000,%00000,%00000,%00000,%00000,%00000,%00000] ' Clear = Custom Char 7
+SEROUT 14, 84, [248, %00000,%00000,%00000,%01100,%01100,%00000,%00000,%00000] ' Center Ball = Custon Char 0
+SEROUT 14, 84, [249, %00000,%01100,%01100,%00000,%00000,%00000,%00000,%00000] ' UP Ball = Custon Char 1
+SEROUT 14, 84, [250, %00000,%00000,%00000,%00110,%00110,%00000,%00000,%00000] ' RIGHT Ball = Custon Char 2
+SEROUT 14, 84, [251, %00000,%00000,%00000,%00000,%00000,%00000,%01100,%01100] ' DOWN Ball = Custon Char 3
+SEROUT 14, 84, [252, %00000,%00000,%00000,%11000,%11000,%00000,%00000,%00000] ' LEFT Ball = Custon Char 4
+GOSUB drawBoard
+
+'------------------------Game Loop-------------------------------
+
+' Draw the player at the starting point
+currentTile = 21
+SEROUT 14, 84, [128, 0]
+
+DO
+  'GET INPUT FROM USER
+
+  moveDir = (moveDir + 1) // 5
+
+  'CHECK IF MOVEMENT IS VALID OR GAMEOVER
+
+  'PLAY ANIMATION W/ SOUND AND UPDATE CURRENT TILE
+  GOSUB animate
+  PAUSE 500
+LOOP
+
+END
+
+'------------------------Subroutines-----------------------------
+drawBoard:
+  FOR currentTile = 0 TO 79
+    GOSUB getTileType 'paramters: currentTile
+    IF tileType = 0 THEN
+      SEROUT 14, 84, [5] 'Draw character 0
+    ELSE
+      SEROUT 14, 84, [9] 'Go right
+    ENDIF
+  NEXT
+  SEROUT 14, 84, [147, 6]
+RETURN
+'---------------------------------------------
+getTileType:
+  ix = currentTile / 8 ' Figures out which byte the data will be in
+  iy = currentTile // 8 ' Figures out which bit the data we want is
+  READ ix, tileType
+
+  mask = 1 << (7 - iy) ' Create a mask to get only the data we want
+
+  tileType = (tileType & mask) MAX 1 ' Apply that mask and limit it to 1s and 0s
+RETURN
+'---------------------------------------------
+animate:
+  'I need to take the current tile, and then move smoothly into the next tile, and clear the old tile while doing so. All based on the direction we're moving
+  SELECT moveDir
+
+  CASE 0: 'No movement
+    SEROUT 14, 84, [222]
+    PAUSE 600
+
+  CASE 1: 'Move UP
+    SEROUT 14, 84, [223]
+    ' 1) UpPos in current tile, 2) DownPos in nextTile, 3) Clear Old tile, 4) MiddePos in nextTile
+    SEROUT 14, 84, 100, [(currentTile + 128), 1, (currentTile + 108), 3]
+    SEROUT 14, 84, [(currentTile + 128), 7]
+    SEROUT 14, 84, 100, [(currentTile + 108), 0]
+
+    currentTile = currentTile - 20
+
+  CASE 2: 'Move RIGHT
+    SEROUT 14, 84, [225]
+    ' Right in current Tile, Left in next tile, Clear old tile, Middle in New Tile
+    SEROUT 14, 84, 100, [(currentTile + 128), 2, (currentTile + 129), 4]
+    SEROUT 14, 84, [(currentTile + 128), 7]
+    SEROUT 14, 84, 100, [(currentTile + 129), 0]
+
+    currentTile = currentTile + 1
+
+  CASE 3: 'Move DOWN
+    SEROUT 14, 84, [227]
+    ' Down in current tile, up in next tile, clear old tile, Middle in new Tile
+    SEROUT 14, 84, 100, [(currentTile + 128), 3, (currentTile + 148), 1]
+    SEROUT 14, 84, [(currentTile + 128), 7]
+    SEROUT 14, 84, 100, [(currentTile + 148), 0]
+
+    currentTile = currentTile + 20
+
+  CASE 4: 'Move LEFT
+    SEROUT 14, 84, [228]
+    ' Left in current tile, right in next tile, clear old tile, Middle in new Tile
+    SEROUT 14, 84, 100, [(currentTile + 128), 4, (currentTile + 127), 2]
+    SEROUT 14, 84, [(currentTile + 128), 7]
+    SEROUT 14, 84, 100, [(currentTile + 127), 0]
+
+    currentTile = currentTile - 1
+
+  ENDSELECT
+
+RETURN
