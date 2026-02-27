@@ -13,7 +13,8 @@
 ' 80 characters, 4 rows of 20. Top Left = 0, and bottom right = 79, increases going right, then down, right, then down.
 ' DATA Stores in Bytes, I need 10 Bytes for the whole board (80 bits):
 board DATA %11011101, %11011101, %11010101, %01010101, %01010101, %01010101, %01010101, %01010111, %01110111, %01110111
-
+visited VAR Byte(10) ' A space in ram that can be checked quickly for hard mode, no turning back
+previousTile VAR Byte
 tileType VAR Byte ' Each character can be defined as death block (0) or path (1)
 mask VAR Byte ' used for reading data
 ix VAR Byte ' used for reading Bytes
@@ -26,9 +27,46 @@ moveDir VAR Nib '0 = NO_MOVEMENT, 1 = UP, 2 = RIGHT, 3 = DOWN, 4 = LEFT (no meve
 x VAR Word 'x-output holder
 y VAR Word 'y-output holder
 
-'------------------------Initialization--------------------------
+keypad VAR Word 'Holds the processed output of the keypad reading function
+row VAR Nib
+column VAR Nib
+temp VAR Nib
+
+dif VAR Bit ' Determines the difficulty. (0 = Normal, 1 = Hard)
+wrongPress VAR Bit ' Determines if they didn't select a difficulty
+start VAR Bit ' Controls when to start the game
+
+'------------------------Game Menu-------------------------------
+gameRestart:
+FOR ix = 0 TO 9
+  visited(ix) = 0 ' Clear ou visited array
+NEXT
 PAUSE 100
+wrongPress = 0
 SEROUT 14, 84, 5, [22,12,17, 210] ' [Turn on LCD, Clear and go to character 0, turn on Backlight, 16th notes]
+SEROUT 14, 84, ["----Tilt-A-Maze-----", 148, "Choose Difficulty:", 168,"1) Normal",188,"2) Hard"]
+
+DO
+  GOSUB getKeypadInput
+  IF wrongPress = 1 THEN
+    SEROUT 14, 84, [128, "----Wrong-Button----", 148, "Choose Again:     "]
+  ENDIF
+LOOP
+
+startGame:
+SEROUT 14, 84, [12]
+start = 0
+PAUSE 250
+SEROUT 14, 84, ["Press * to start!"]
+
+DO
+  GOSUB getKeypadInput
+LOOP UNTIL start = 1
+
+SEROUT 14, 84, [12, 223, 227, 230]
+PAUSE 1000
+
+'------------------------Initialization--------------------------
 SEROUT 14, 84, [253, %11111,%11111,%11111,%11111,%11111,%11111,%11111,%11111] ' Solid Block = Custom Char 5
 SEROUT 14, 84, [254, %00000,%10001,%01010,%00100,%01010,%10001,%00000,%00000] ' X for Finish = Custom Char 6
 SEROUT 14, 84, [248, %00000,%00000,%00000,%01100,%01100,%00000,%00000,%00000] ' Center Ball = Custon Char 0
@@ -54,7 +92,12 @@ DO
   'PLAY ANIMATION W/ SOUND AND UPDATE CURRENT TILE
   GOSUB animate
 
-  PAUSE 25 ' Adjsut this to slow or speed up movement
+  ' IF HARD MODE, MAKE LAST SPOT A WALL
+  IF dif = 1 THEN
+    GOSUB fillWall
+  ENDIF
+
+  'PAUSE 100 ' Adjsut this to slow or speed up movement
 LOOP
 
 END
@@ -126,14 +169,28 @@ boundsAndLoseCheck:
 
     GOSUB getTileType
 
+    IF dif = 1 THEN
+      ix = tempTile / 8
+      iy = tempTile // 8
+      mask = 1 << (7 - iy)
+
+    IF (visited(ix) & mask) > 0 THEN
+      tileType = 0
+    ENDIF
+ENDIF
+
     IF tileType = 0 THEN
-      SEROUT 14, 84, [12, " G A M E O V E R "]
+      SEROUT 14, 84, [12, 148, "  G A M E O V E R  ", 177, ":("]
+      SEROUT 14, 84, 100, [228, 227, 223, 220]
+      PAUSE 3000
+      GOSUB gameRestart
     ENDIF
 
   ENDIF
 RETURN
 '---------------------------------------------
 animate:
+  previousTile = currentTile
   'I need to take the current tile, and then move smoothly into the next tile, and clear the old tile while doing so. All based on the direction we're moving
   SELECT moveDir
 
@@ -179,4 +236,70 @@ animate:
 
   ENDSELECT
 
+  IF currentTile = 19 THEN ' Change the tile number if the finish is not at the top right
+    GOSUB playWinSequence
+  ENDIF
+
+RETURN
+'----------------------------------------
+playWinSequence:
+  SEROUT 14, 84, [12, 148, "  Y O U   W O N   ", 175, ":D"]
+  SEROUT 14, 84, [218, 230,231,226,220, 217 ,231, 218 ,227, 231, 219 ,223, 218]
+  PAUSE 3000
+  GOSUB gameRestart
+RETURN
+'----------------------------------------
+getKeypadInput:
+  keypad = 0
+  OUTL = %00000000 ' Initialize IO
+  DIRL = %00000000
+  FOR row = 0 TO 3
+    DIRB = %1111 ' Set columns (P7-P4) as outputs
+    OUTB = %0000 ' Pull columns low (act as pull down)
+    OUTA = 1 << row ' Set rows high one by one
+    DIRA = 1 << row
+    temp = 0 ' Reset temp variable to 0
+    FOR column = 0 TO 3
+      INPUT (column + 4) ' Set columns as inputs
+      temp = temp | (INB & (1 << column)) ' Poll column state and store in temp
+    NEXT
+    keypad = keypad << 4 | (Temp REV 4) ' Store keypad value
+  NEXT
+
+  ' If a key is being pressed:
+  IF keypad > 0 THEN
+    ' keypad = 1 means 1 is pressed, keypad = 16 means 2 is pressed, keypad = 8 means star is pressed
+    IF keypad = 1 THEN
+      dif = 0
+      SEROUT 14, 84, [223]
+      GOSUB startGame
+    ELSEIF keypad = 16 THEN
+      dif = 1
+      SEROUT 14, 84, [223]
+      GOSUB startGame
+    ELSE
+      wrongPress = 1
+      IF keypad = 8 THEN
+        start = 1
+      ENDIF
+    ENDIF
+
+    SEROUT 14, 84, [223]
+    PAUSE 250
+  ENDIF
+RETURN
+'-------------------------------
+fillWall:
+  IF moveDir > 0 THEN
+    tempTile = previousTile
+
+    ix = tempTile / 8
+    iy = tempTile // 8
+
+    mask = 1 << (7 - iy)
+
+    visited(ix) = visited(ix) | mask
+
+    SEROUT 14, 84, [(tempTile + 128), 5]
+  ENDIF
 RETURN
