@@ -1,0 +1,87 @@
+' {$STAMP BS2}
+' {$PBASIC 2.5}
+' -----[ I/O Definitions ]----------------------------------------------------
+DinDout PIN 2 ' P2 transceives to/from Din/Dout
+Clk PIN 0 ' P0 sends pulses to HM55B's Clk
+En PIN 1 ' P2 controls HM55B's /EN(ABLE)
+pushbutton PIN 10
+' -----[ Constants ]----------------------------------------------------------
+Reset CON %0000 ' Reset command for HM55B
+Measure CON %1000 ' Start measurement command
+Report CON %1100 ' Get status/axis values command
+Ready CON %1100 ' 11 -> Done, 00 -> no errors
+NegMask CON %1111100000000000 ' For 11-bit negative to 16-bits
+Negative CON 1 ' Word.bit15 = 1 -> negative
+Positive CON 0 ' Word.bit15 = 0 -> positive
+' -----[ Variables ]----------------------------------------------------------
+x VAR Word ' x-axis data
+y VAR Word ' y-axis data
+status VAR Nib ' Status flags
+angle VAR Word ' Store angle measurement
+mCount VAR Nib ' Measurement count
+xSum VAR Word ' x-axis measurement accumulator
+ySum VAR Word ' y-axis measurement accumulator
+sign VAR Bit ' Sign bit
+angleMem VAR Word
+difference VAR Word
+alarmArm VAR Bit
+' LCD Display heading in degrees on top line and x and y
+' measurements on the bottom line.
+SEROUT 14, 84, [128, "Alarm Angle Set ", ' Static characters
+148, "OFF "]
+' -----[ Main Routine ]-------------------------------------------------------
+DO ' Main loop
+  GOSUB Compass_Get_Axes ' Get x, and y values
+  angle = x ATN -y ' Convert x and y to brads
+  angle = angle */ 361 ' Convert brads to degrees
+  ' LCD Display heading in degrees on top line
+  SEROUT 14, 84, [168, "Angle: ", 175, DEC angle, 7]
+  DEBUG ? PushButton
+  IF PushButton = 1 THEN
+    angleMem = angle
+    alarmArm = 1
+    SEROUT 14, 84, [230,148,"ON " ]
+  ENDIF
+  difference = ABS(angle - angleMem)
+  IF alarmArm = 1 THEN
+    SEROUT 14, 84, [160, "      ", 160, DEC angleMem, 7]
+    IF difference > 5 AND difference < 355 THEN
+      SEROUT 14, 84, [230]
+    ENDIF
+  ENDIF
+
+  PAUSE 150 ' Debug delay for slower PCs
+LOOP ' Repeat main loop
+' -----[ Subroutine - Compass_Get_Axes ]--------------------------------------
+Compass_Get_Axes: ' Compass module subroutine
+xSum = 0 ' Accumulators to zero
+ySum = 0
+FOR mCount = 1 TO 10 ' Take ten measurements
+HIGH En: LOW En ' Send reset command to HM55B
+SHIFTOUT DinDout,clk,MSBFIRST,[Reset\4]
+HIGH En: LOW En ' HM55B start measurement cmd
+SHIFTOUT DinDout,clk,MSBFIRST,[Measure\4]
+status = 0 ' Clear previous status flags
+DO ' Status flag checking loop
+HIGH En: LOW En ' Measurement status command
+SHIFTOUT DinDout,clk,MSBFIRST,[Report\4]
+SHIFTIN DinDout,clk,MSBPOST,[Status\4] ' Get Status
+LOOP UNTIL status = Ready ' Status ready? Exit loop
+SHIFTIN DinDout,clk,MSBPOST,[x\11,y\11] ' Get x & y axis values
+HIGH En ' Disable module
+IF (y.BIT10 = 1) THEN y = y | NegMask ' Store 11-bits as signed word
+IF (x.BIT10 = 1) THEN x = x | NegMask ' Repeat for other axis
+xSum = xSum + x ' Keep a running sum of x
+ySum = ySum + y ' Keep a running sum of y
+NEXT
+sign = xSum.BIT15 ' Store sign of xSum
+xSum = ABS(xSum) ' Take absolute value
+x = xSum / 10 ' x = the average measurement
+IF xSum // 10 >=5 THEN x = x + 1 ' Fraction > .5? Round up
+IF sign = Negative THEN x = - x ' if xSum negative, negate x
+sign = ySum.BIT15 ' Store sign of ySum
+ySum = ABS(ySum) ' Take absolute value
+y = ySum / 10 ' y = the average measurement
+IF ySum // 10 >=5 THEN y = y + 1 ' Fraction > .5? Round up
+IF sign = Negative THEN y = - y ' if ySum negative, negate y
+RETURN

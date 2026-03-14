@@ -1,0 +1,210 @@
+' {$STAMP BS2}
+' {$PBASIC 2.5}
+'
+' IMPORTANT: Follow the instructions in Chapter #4, Activity #2 of
+' Smart Sensors and Applications. It's available for
+' download from the Smart Sensors and Applications page at
+' www.parallax.com.
+'
+' -----[ EEPROM Data ]--------------------------------------------------------
+CompassOffsets DATA @ 0, (4) ' Stores x and y axis offsets
+CompassLowVal DATA (1) ' Stores index of lowest angle
+CompassCal DATA (16) ' 16 reference compass angles
+' -----[ Pin Definitions ]---------------------------------------------------
+DinDout PIN 2 ' P2 transceives to/from Din/Dout
+Clk PIN 0 ' P0 sends pulses to HM55B's Clk
+En PIN 1 ' P1 controls HM55B's /EN(ABLE)
+' -----[ Constants ]----------------------------------------------------------
+Reset CON %0000 ' Reset command for HM55B
+Measure CON %1000 ' Start measurement command
+Report CON %1100 ' Get status/axis values command
+Ready CON %1100 ' 11 -> Done, 00 -> no errors
+NegMask CON %1111100000000000 ' For 11-bit negative to 16-bits
+Current CON 0 ' Index for table array
+Previous CON 1 ' Index for table array
+' -----[ Variables ]----------------------------------------------------------
+x VAR Word ' x-axis data
+y VAR Word ' y-axis data
+status VAR Nib ' Status flags
+angle VAR Word ' Angle measurement
+counter VAR Byte ' Loop counter
+index VAR Nib ' EEPROM index
+character VAR Byte ' Stores a DEBUGIN character
+integer VAR Word ' Integer values for display
+fraction VAR Nib ' Fractional values for display
+brads VAR Byte ' Binary radian measurements
+table VAR Byte(2) ' Stores table values
+temp VAR Word(2) ' Stores axis measurements
+axisOffset VAR Word ' Stores axis offset value
+' -----[ Main Routine ]-------------------------------------------------------
+DEBUG "Click the Transmit Windowpane, ", CR, ' Wait for user.
+"then press Enter... ", CR, CR
+DEBUGIN character
+DO ' Main loop
+  DEBUG "Type a character: ", CR, ' Menu
+  "C - calibrate ", CR,
+  "R - review calibration settings", CR,
+  "> "
+  DEBUGIN Character ' Get user selection
+  DEBUG CR
+  IF character = "c" OR character = "C" THEN ' "c" -> calibrate
+    GOSUB Compass_Calibrate ' "r" -> review settings
+  ELSEIF character = "r" OR character = "R" THEN
+    GOSUB Calibration_Review
+  ENDIF
+  DEBUG CR, "Press any key to", ' wait for user
+  CR, "continue"
+  DEBUGIN character
+  DEBUG CR, CR
+LOOP ' Repeat main loop
+' -----[ Subroutine - Compass_Calibrate ]-------------------------------------
+Compass_Calibrate:
+  GOSUB Get_And_Store_Axis_Offsets
+  GOSUB Get_And_Store_Interpolation
+  GOSUB Get_And_Store_Low_Value_Address
+  DEBUG CR, "CALIBRATION COMPLETED...", CR,
+  "You are now ready to run ", CR,
+  "TestCalibratedCompass.bs2.", CR
+RETURN
+' -----[ Subroutine - Get_And_Store_Axis_Offsets ]----------------------------
+' This subroutine prompts the user to point the compass north, then east, then
+' south, then west. It then averages the maximum and minimum values for each
+' axis and stores that average in the EEPROM area reserved by the
+' CompassOffsets DATA directive.
+Get_And_Store_Axis_Offsets:
+' FOR...NEXT loop repeats for four axis measurements.
+  FOR counter = 0 TO 3
+    ' Instruct user to point compass to a particular direction, then wait
+    ' for ENTER character.
+    DEBUG CR, "Point compass to "
+    LOOKUP counter, [ 0, 90, 180, 270 ], integer
+    DEBUG DEC integer
+    DEBUG " degrees", CR, "then press Enter..."
+    DEBUGIN character
+    GOSUB Compass_Get_Axes ' Get axis measurements
+    ' Calculate offsets based on max and min values for each axis, then store
+    ' in EEPROM.
+    SELECT counter
+    CASE 0 ' North
+      temp(0) = x
+    CASE 1 ' East
+      temp(1) = y
+    CASE 2 ' South
+      x = x + temp(0)
+      IF x.BIT15 = 1 THEN
+        x = ABS(x)/2
+        x = -x
+      ELSE
+        x = x / 2
+      ENDIF
+      WRITE CompassOffsets, Word x
+    CASE 3 ' West
+      y = y + temp(1)
+      IF Y.BIT15 = 1 THEN
+        y = ABS(y)/2
+        y = - y
+      ELSE
+        y = x / 2
+      ENDIF
+    WRITE CompassOffsets + 2, Word y
+    ENDSELECT
+  NEXT
+RETURN
+' -----[ Subroutine - Get_And_Store_Interpolation ]---------------------
+' This subroutine prompts the user to point the compass to directions
+' separated by 22.5 degrees and stores the angle for each of the measurements
+' in the EEPROM area reserved by the CompassCal DATA directive.
+Get_And_Store_Interpolation:
+  FOR counter = 0 TO 15
+    DEBUG CR, "Point compass to "
+    LOOKUP counter, [0, 22, 45, 67, 90, 112, 135, 157,
+    180, 202, 225, 247, 270, 292, 315, 337], integer
+    LOOKUP counter, [ 0, 5, 0, 5, 0, 5, 0, 5,
+    0, 5, 0, 5, 0, 5, 0, 5 ], fraction
+    DEBUG DEC integer
+    IF fraction = 5 THEN DEBUG ".", DEC fraction
+    DEBUG " degrees", CR, "then press Enter..."
+    DEBUGIN character ' Wait for user
+    GOSUB Compass_Get_Axes ' Get x, and y values
+    GOSUB Compass_Correct_Offsets ' Correct axis offsets
+    angle = x ATN - y ' Convert x and y to brads
+    WRITE CompassCal + counter, angle ' Store as brad value
+  NEXT
+RETURN
+' -----[ Subroutine - Get_And_Store_Low_Value_Address ]-----------------------
+' This subroutine finds and stores the address of the lowest value in the
+' EEPROM area reserved by the CompassCal DATA directive and stores it in
+' a byte reserved by the CompassLowVal DATA directive. This reduces the
+' code overhead in TestCalibratedCompass.bs2.
+Get_And_Store_Low_Value_Address:
+  index = 8
+  table(current) = 0: table(previous) = 0
+  DO
+    index = index + 1
+    READ CompassCal + index, table(current)
+    READ CompassCal + (index - 1 & $F), table(previous)
+  LOOP UNTIL table(current) < table(previous)
+  WRITE CompassLowVal, index
+RETURN
+' -----[ Subroutine - Calibration_Review ]------------------------------------
+' Display EEPROM values.
+Calibration_Review:
+  DEBUG CR, "Axis Offsets:", CR
+  READ CompassOffsets, Word x
+  DEBUG CR, "x-Offset = ", SDEC x
+  READ CompassOffsets + 2, Word y
+  DEBUG CR, "y-Offset = ", SDEC y, CR
+  DEBUG CR, "Index of low value in CompassCal:", CR
+  READ CompassLowVal, index
+  DEBUG CR, "Low value ", ? index
+  DEBUG CR, "TestCalibratedCompass.bs2", CR,
+  "uses these values to ", CR,
+  "correct errors:", CR
+  DEBUG CR, "Brad Angle Degree Angle",
+  CR, "Ideal Actual Ideal Actual",
+  CR, "------ ------ ------ ------", CR
+  FOR counter = 0 TO 15
+    brads = counter * 16
+    DEBUG CRSRX, 1, DEC3 brads
+    READ CompassCal + counter, angle
+    DEBUG CRSRX, 10, DEC3 angle
+    LOOKUP counter, [0, 22, 45, 67, 90, 112, 135, 157,
+    180, 202, 225, 247, 270, 292, 315, 337], integer
+    LOOKUP counter, [ 0, 5, 0, 5, 0, 5, 0, 5,
+    0, 5, 0, 5, 0, 5, 0, 5 ], fraction
+    DEBUG CRSRX, 19, DEC3 integer, ".", DEC fraction
+    angle = angle */ 361 ' Convert brads to degrees
+    DEBUG CRSRX, 28, DEC3 angle, CR
+    PAUSE 50 ' Debug delay for slower PCs
+  NEXT
+  DEBUG CR
+RETURN
+' -----[ Subroutine - Compass_Get_Axes ]--------------------------------------
+Compass_Get_Axes: ' Compass module subroutine
+  HIGH En: LOW En ' Send reset command to HM55B
+  SHIFTOUT DinDout,clk,MSBFIRST,[Reset\4]
+  HIGH En: LOW En ' HM55B start measurement command
+  SHIFTOUT DinDout,clk,MSBFIRST,[Measure\4]
+  status = 0 ' Clear previous status flags
+  DO ' Status flag checking loop
+    HIGH En: LOW En ' Measurement status command
+    SHIFTOUT DinDout,clk,MSBFIRST,[Report\4]
+    SHIFTIN DinDout,clk,MSBPOST,[Status\4] ' Get Status
+  LOOP UNTIL status = Ready ' Exit loop when status is ready
+  SHIFTIN DinDout,clk,MSBPOST,[x\11,y\11] ' Get x & y axis values
+  HIGH En ' Disable module
+  IF (y.BIT10 = 1) THEN y = y | NegMask ' Store 11-bits as signed word
+  IF (x.BIT10 = 1) THEN x = x | NegMask ' Repeat for other axis
+RETURN
+' -----[ Subroutine - Compass_Correct_Offsets ]-------------------------------
+' This subroutine corrects cumulative magnetic field interference that can
+' come from sources such as the PCB, jumper wires, a nearby battery, or a
+' nearby current source. This subroutine relies on values stored in
+' the EEPROM space that was reserved by the CompassOffsets DATA directive.
+' These EEPROM values are written by this program during calibration.
+Compass_Correct_Offsets:
+  READ CompassOffsets, Word axisOffset ' Get x-axis offset
+  x = x - axisOffset ' Correct x-axis
+  READ CompassOffsets + 2, Word axisOffset ' Get y-axis offset
+  y = y - axisOffset ' Correct y-axis
+RETURN

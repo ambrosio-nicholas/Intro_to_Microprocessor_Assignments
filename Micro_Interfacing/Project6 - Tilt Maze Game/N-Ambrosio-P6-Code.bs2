@@ -43,7 +43,7 @@ FOR ix = 0 TO 9
 NEXT
 PAUSE 100
 wrongPress = 0
-SEROUT 14, 84, 5, [22,12,17, 210] ' [Turn on LCD, Clear and go to character 0, turn on Backlight, 16th notes]
+SEROUT 14, 84, 5, [22,12,17, 208]'210] ' [Turn on LCD, Clear and go to character 0, turn on Backlight, 16th notes]
 SEROUT 14, 84, ["----Tilt-A-Maze-----", 148, "Choose Difficulty:", 168,"1) Normal",188,"2) Hard"]
 
 DO
@@ -181,7 +181,7 @@ ENDIF
 
     IF tileType = 0 THEN
       SEROUT 14, 84, [12, 148, "  G A M E O V E R  ", 177, ":("]
-      SEROUT 14, 84, 100, [228, 227, 223, 220]
+      SEROUT 14, 84, 100, [210, 228, 227, 223, 220, 208]
       PAUSE 3000
       GOSUB gameRestart
     ENDIF
@@ -244,7 +244,7 @@ RETURN
 '----------------------------------------
 playWinSequence:
   SEROUT 14, 84, [12, 148, "  Y O U   W O N   ", 175, ":D"]
-  SEROUT 14, 84, [218, 230,231,226,220, 217 ,231, 218 ,227, 231, 219 ,223, 218]
+  SEROUT 14, 84, [210, 218, 230,231,226,220, 217 ,231, 218 ,227, 231, 219 ,223, 218, 208]
   PAUSE 3000
   GOSUB gameRestart
 RETURN
@@ -300,6 +300,6 @@ fillWall:
 
     visited(ix) = visited(ix) | mask
 
-    SEROUT 14, 84, [(tempTile + 128), 5]
+    'SEROUT 14, 84, [(tempTile + 128), 5] 'Fills the previous wall
   ENDIF
 RETURN

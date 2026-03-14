@@ -1,0 +1,92 @@
+' {$STAMP BS2} ' BASIC Stamp Directive
+' {$PBASIC 2.5} ' PBASIC Directive
+' -----[ Constants ]----------------------------------------------------------
+Negative CON 1 ' Sign - .bit15 of Word variables
+Positive CON 0
+' -----[ I/O Definitions ]----------------------------------------------------
+DinDout PIN 2 ' P2 transceives to/from Din/Dout
+Clk PIN 0 ' P0 sends pulses to HM55B's Clk
+En PIN 1 ' P2 controls HM55B's /EN(ABLE)
+Reset CON %0000 ' Reset command for HM55B
+Measure CON %1000 ' Start measurement command
+Report CON %1100 ' Get status/axis values command
+Ready CON %1100 ' 11 -> Done, 00 -> no errors
+NegMask CON %1111100000000000 ' For 11-bit negative to 16-bits
+' -----[ Variables ]----------------------------------------------------------
+xTilt VAR Word ' Memsic x-axis measurement
+yTilt VAR Word ' Memsic y-axis measurement
+side VAR Word ' trig subroutine variable
+angleTilt VAR Word ' result angle - degrees
+sign VAR Bit ' Sign bit
+xCompass VAR Word ' x-axis data
+yCompass VAR Word ' y-axis data
+status VAR Nib ' Status flags
+angleCompass VAR Word ' Store angle measurement
+' -----[ Initialization ]-----------------------------------------------------
+DEBUG CLS ' Clear Debug Terminal
+' -----[ Main Routine ]-------------------------------------------------------
+DO
+PULSIN 6, 1, xTilt ' x-axis measurement
+PULSIN 7, 1, yTilt ' y-axis measurement
+' Scale and offset x and y-axis values to -127 to 127.
+xTilt = (xTilt MIN 1875 MAX 3125) - 1875 ** 13369 - 127
+yTilt = (yTilt MIN 1875 MAX 3125) - 1875 ** 13369 - 127
+' Calculate and display Arcsine of x-axis measurement.
+side = xTilt
+GOSUB Arcsine
+DEBUG HOME, "x tilt angle = ", CLREOL, SDEC3 angleTilt, CR
+' Calculate and display Arcsine of y-axis measurement.
+side = yTilt
+GOSUB Arcsine
+DEBUG "y tilt angle = ", CLREOL, SDEC3 angleTilt
+GOSUB Compass_Get_Axes ' Get x, and y values
+angleCompass = xCompass ATN -yCompass ' Convert x and y to brads
+angleCompass = angleCompass */ 361 ' Convert brads to degrees
+DEBUG CR, "Compass angle = ",
+DEC angleCompass, " degrees", CLREOL
+PAUSE 150 ' Debug delay for slower PCs
+LOOP ' Repeat DO...LOOP
+' -----[ Subroutine - Arcsine ]-----------------------------------------------
+' This subroutine calculates arcsine based on the y coordinate on a circle
+' of radius 127. Set the side variable equal to your y coordinate before
+' calling this subroutine.
+Arcsine: ' Inverse sine subroutine
+GOSUB Arccosine ' Get inverse cosine
+angleTilt = 90 - angleTilt ' sin(angle) = cos(90 - angle)
+RETURN
+' -----[ Subroutine - Arccosine ]---------------------------------------------
+' This subroutine calculates arccosine based on the x coordinate on a circle
+' of radius 127. Set the side variable equal to your x coordinate before
+' calling this subroutine.
+Arccosine: ' Inverse cosine subroutine
+sign = side.BIT15 ' Save sign of side
+side = ABS(side) ' Evaluate positive side
+angleTilt = 63 - (side / 2) ' Initial angle approximation
+DO ' Successive approximation loop
+IF (COS angleTilt <= side) THEN EXIT ' Done when COS angle <= side
+angleTilt = angleTilt + 1 ' Keep increasing angle
+LOOP
+angleTilt = angleTilt */ 361 ' Convert brads to degrees
+IF sign = Negative THEN ' Adjust if sign is negative.
+angleTilt = 180 - angleTilt
+ENDIF
+RETURN
+' -----[ Subroutine - Compass_Get_Axes ]------------------------------------
+Compass_Get_Axes: ' Compass module subroutine
+HIGH En: LOW En ' Send reset command to HM55B
+SHIFTOUT DinDout,clk,MSBFIRST,[Reset\4]
+HIGH En: LOW En ' HM55B start measurement command
+SHIFTOUT DinDout,clk,MSBFIRST,[Measure\4]
+status = 0 ' Clear previous status flags
+DO ' Status flag checking loop
+HIGH En: LOW En ' Measurement status command
+SHIFTOUT DinDout,clk,MSBFIRST,[Report\4]
+SHIFTIN DinDout,clk,MSBPOST,[Status\4] ' Get Status
+LOOP UNTIL status = Ready ' Exit loop when status is ready
+' Get x & y axis values
+SHIFTIN DinDout,clk,MSBPOST,[xCompass\11,yCompass\11]
+HIGH En ' Disable module
+' Store 11-bits as signed words for both axes
+IF (yCompass.BIT10 = 1) THEN yCompass = yCompass | NegMask
+IF (xCompass.BIT10 = 1) THEN xCompass = xCompass | NegMask
+RETURN
