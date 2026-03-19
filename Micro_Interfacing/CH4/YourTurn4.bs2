@@ -22,6 +22,8 @@ Ready CON %1100 ' 11 -> Done, 00 -> no errors
 NegMask CON %1111100000000000 ' For 11-bit negative to 16-bits
 Current CON 0 ' Index for table array
 Previous CON 1 ' Index for table array
+Negative CON 1 ' Word.bit15 = 1 -> negative
+Positive CON 0 ' Word.bit15 = 0 -> positive
 ' -----[ Variables ]----------------------------------------------------------
 x VAR Word ' x-axis data
 y VAR Word ' y-axis data
@@ -36,6 +38,10 @@ brads VAR Byte ' Binary radian measurements
 table VAR Byte(2) ' Stores table values
 temp VAR Word(2) ' Stores axis measurements
 axisOffset VAR Word ' Stores axis offset value
+mCount VAR Nib ' Measurement count
+xSum VAR Word ' x-axis measurement accumulator
+ySum VAR Word ' y-axis measurement accumulator
+sign VAR Bit ' Sign bit
 ' -----[ Main Routine ]-------------------------------------------------------
 DEBUG "Click the Transmit Windowpane, ", CR, ' Wait for user.
 "then press Enter... ", CR, CR
@@ -126,7 +132,6 @@ Get_And_Store_Interpolation:
     DEBUG " degrees", CR, "then press Enter..."
     DEBUGIN character ' Wait for user
     GOSUB Compass_Get_Axes ' Get x, and y values
-    GOSUB Compass_Correct_Offsets ' Correct axis offsets
     angle = x ATN - y ' Convert x and y to brads
     WRITE CompassCal + counter, angle ' Store as brad value
   NEXT

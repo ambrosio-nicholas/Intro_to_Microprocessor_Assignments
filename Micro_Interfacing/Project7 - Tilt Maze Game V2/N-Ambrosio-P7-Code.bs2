@@ -1,0 +1,309 @@
+' Nicholas Ambrosio - Project 7 - Due: March 24, 2026
+
+' This project will make a ball-in-maze game that is controlled by a 4direction tilt sensor and displayed on an LCD
+
+' {$STAMP BS2}
+' {$PBASIC 2.5}
+'-------------------------Pin Out--------------------------------
+' Pin 14 = LCD
+' Pin 11 = OUT1 (TiltSensor)
+' Pin 10 = OUT2 (TiltSensor)
+' Pins 0-7 = Keypad
+'--------------------------Variables-----------------------------
+' 80 characters, 4 rows of 20. Top Left = 0, and bottom right = 79, increases going right, then down, right, then down.
+' DATA Stores in Bytes, I need 10 Bytes for the whole board (80 bits):
+board DATA %11011101, %11011101, %11010101, %01010101, %01010101, %01010101, %01010101, %01010111, %01110111, %01110111
+visited VAR Byte(10) ' A space in ram that can be checked quickly for hard mode, no turning back
+previousTile VAR Byte
+tileType VAR Byte ' Each character can be defined as death block (0) or path (1)
+mask VAR Byte ' used for reading data
+ix VAR Byte ' used for reading Bytes
+iy VAR Nib ' used for reading Bits
+
+currentTile VAR Byte ' the tile that the ball is on
+tempTile VAR Byte ' a temporary tile used when checking the next tile
+
+moveDir VAR Nib '0 = NO_MOVEMENT, 1 = UP, 2 = RIGHT, 3 = DOWN, 4 = LEFT (no mevement would be like running into the edge of the maze)
+
+keypad VAR Word 'Holds the processed output of the keypad reading function
+row VAR Nib
+column VAR Nib
+temp VAR Nib
+
+dif VAR Bit ' Determines the difficulty. (0 = Normal, 1 = Hard)
+wrongPress VAR Bit ' Determines if they didn't select a difficulty
+start VAR Bit ' Controls when to start the game
+isGameOver VAR Bit ' Tracks if we hit a lose condition
+time VAR Word ' Tracks how long it took to beat the maze
+
+'------------------------Game Menu-------------------------------
+gameRestart:
+isGameOver = 0
+time = 0
+FOR ix = 0 TO 9
+  visited(ix) = 0 ' Clear our visited array
+NEXT
+PAUSE 100
+wrongPress = 0
+SEROUT 14, 84, 5, [22,12,17, 208]'210] ' [Turn on LCD, Clear and go to character 0, turn on Backlight, 16th notes]
+SEROUT 14, 84, ["---Tilt-A-Maze-V2---", 148, "Choose Difficulty:", 168,"1) Normal",188,"2) Hard"]
+
+DO
+  GOSUB getKeypadInput
+  IF wrongPress = 1 THEN
+    SEROUT 14, 84, [128, "----Wrong-Button----", 148, "Choose Again:     "]
+  ENDIF
+LOOP
+
+startGame:
+SEROUT 14, 84, [12]
+start = 0
+PAUSE 250
+SEROUT 14, 84, ["Press * to start!"]
+
+DO
+  GOSUB getKeypadInput
+LOOP UNTIL start = 1
+
+SEROUT 14, 84, [12, 223, 227, 230]
+PAUSE 1000
+
+'------------------------Initialization--------------------------
+SEROUT 14, 84, [253, %11111,%11111,%11111,%11111,%11111,%11111,%11111,%11111] ' Solid Block = Custom Char 5
+SEROUT 14, 84, [254, %00000,%10001,%01010,%00100,%01010,%10001,%00000,%00000] ' X for Finish = Custom Char 6
+SEROUT 14, 84, [248, %00000,%00000,%00000,%01100,%01100,%00000,%00000,%00000] ' Center Ball = Custon Char 0
+SEROUT 14, 84, [249, %00000,%01100,%01100,%00000,%00000,%00000,%00000,%00000] ' UP Ball = Custon Char 1
+SEROUT 14, 84, [250, %00000,%00000,%00000,%00110,%00110,%00000,%00000,%00000] ' RIGHT Ball = Custon Char 2
+SEROUT 14, 84, [251, %00000,%00000,%00000,%00000,%00000,%00000,%01100,%01100] ' DOWN Ball = Custon Char 3
+SEROUT 14, 84, [252, %00000,%00000,%00000,%11000,%11000,%00000,%00000,%00000] ' LEFT Ball = Custon Char 4
+GOSUB drawBoard
+currentTile = 0
+
+'------------------------Game Loop-------------------------------
+
+' Draw the player at the starting point
+SEROUT 14, 84, [128, 0]
+
+DO
+  'GET INPUT FROM USER
+  GOSUB getMoveDir
+
+  'CHECK IF MOVEMENT IS VALID OR NOT
+  GOSUB boundsAndLoseCheck
+
+  'PLAY ANIMATION W/ SOUND AND UPDATE CURRENT TILE
+  GOSUB animate
+
+  ' IF HARD MODE, MAKE LAST SPOT A WALL
+  IF dif = 1 THEN
+    GOSUB fillWall
+  ENDIF
+
+  time = time + 58 ' Add the time it takes for one move in centi-seconds (570 milliseconds)
+LOOP
+
+END
+
+'------------------------Subroutines-----------------------------
+drawBoard:
+  FOR tempTile = 0 TO 79
+    GOSUB getTileType 'paramters: currentTile
+    IF tileType = 0 THEN
+      SEROUT 14, 84, [5] 'Draw character 0
+    ELSE
+      SEROUT 14, 84, [9] 'Go right
+    ENDIF
+  NEXT
+  SEROUT 14, 84, [147, 6]
+RETURN
+'---------------------------------------------
+getTileType:
+  ix = tempTile / 8 ' Figures out which byte the data will be in
+  iy = tempTile // 8 ' Figures out which bit the data we want is
+  READ ix, tileType
+
+  mask = 1 << (7 - iy) ' Create a mask to get only the data we want
+
+  tileType = (tileType & mask) MAX 1 ' Apply that mask and limit it to 1s and 0s
+RETURN
+'---------------------------------------------
+getMoveDir:
+  moveDir = 1
+  DEBUG HOME
+  DEBUG ? IN10
+  DEBUG ? IN11
+  DEBUG ? time
+RETURN
+'---------------------------------------------
+boundsAndLoseCheck:
+  'Lets see if the player's movement is okay, or if it warrants a game over or a stay there.
+  IF moveDir = 1 AND (currentTile < 20) THEN ' Can't go up if you're in the top row
+    moveDir = 0
+  ELSEIF moveDir = 3 AND (currentTile > 59) THEN ' Can't go down if you're in the bottom row
+    moveDir = 0
+  ELSEIF moveDir = 4 AND (currentTile // 20 = 0) THEN ' Can't go left if you're in the leftmost column
+    moveDir = 0
+  ELSEIF moveDir = 2 AND (currentTile // 20 = 19) THEN ' Can't go right if you're in the rightmost column
+    moveDir = 0
+  ELSE
+    ' If you're still good for movement, lets see if it's a wall you're going into
+    SELECT moveDir
+    CASE 0:
+      tempTile = currentTile
+    CASE 1:
+      tempTile = currentTile - 20
+    CASE 2:
+      tempTile = currentTile + 1
+    CASE 3:
+      tempTile = currentTile + 20
+    CASE 4:
+      tempTile = currentTile - 1
+    ENDSELECT
+
+    GOSUB getTileType
+
+    IF dif = 1 THEN
+      ix = tempTile / 8
+      iy = tempTile // 8
+      mask = 1 << (7 - iy)
+
+    IF (visited(ix) & mask) > 0 THEN
+      tileType = 0
+    ENDIF
+ENDIF
+
+    IF tileType = 0 THEN
+      isGameOver = 1
+    ENDIF
+
+  ENDIF
+RETURN
+'---------------------------------------------
+animate:
+  previousTile = currentTile
+  'I need to take the current tile, and then move smoothly into the next tile, and clear the old tile while doing so. All based on the direction we're moving
+  SELECT moveDir
+
+  CASE 0: 'No movement
+    SEROUT 14, 84, [222]
+    PAUSE 600
+
+  CASE 1: 'Move UP
+    SEROUT 14, 84, [223]
+    ' 1) UpPos in current tile, 2) DownPos in nextTile, 3) Clear Old tile, 4) MiddePos in nextTile
+    SEROUT 14, 84, 100, [(currentTile + 128), 1, (currentTile + 108), 3]
+    GOSUB checkLoseCondition
+    SEROUT 14, 84, [(currentTile + 128), " "]
+    SEROUT 14, 84, 100, [(currentTile + 108), 0]
+
+    currentTile = currentTile - 20
+
+  CASE 2: 'Move RIGHT
+    SEROUT 14, 84, [225]
+    ' Right in current Tile, Left in next tile, Clear old tile, Middle in New Tile
+    SEROUT 14, 84, 100, [(currentTile + 128), 2, (currentTile + 129), 4]
+    GOSUB checkLoseCondition
+    SEROUT 14, 84, [(currentTile + 128), " "]
+    SEROUT 14, 84, 100, [(currentTile + 129), 0]
+
+    currentTile = currentTile + 1
+
+  CASE 3: 'Move DOWN
+    SEROUT 14, 84, [227]
+    ' Down in current tile, up in next tile, clear old tile, Middle in new Tile
+    SEROUT 14, 84, 100, [(currentTile + 128), 3, (currentTile + 148), 1]
+    GOSUB checkLoseCondition
+    SEROUT 14, 84, [(currentTile + 128), " "]
+    SEROUT 14, 84, 100, [(currentTile + 148), 0]
+
+    currentTile = currentTile + 20
+
+  CASE 4: 'Move LEFT
+    SEROUT 14, 84, [228]
+    ' Left in current tile, right in next tile, clear old tile, Middle in new Tile
+    SEROUT 14, 84, 100, [(currentTile + 128), 4, (currentTile + 127), 2]
+    GOSUB checkLoseCondition
+    SEROUT 14, 84, [(currentTile + 128), " "]
+    SEROUT 14, 84, 100, [(currentTile + 127), 0]
+
+    currentTile = currentTile - 1
+
+  ENDSELECT
+
+  IF currentTile = 19 THEN ' Change the tile number if the finish is not at the top right
+    GOSUB playWinSequence
+  ENDIF
+
+RETURN
+'----------------------------------------
+playWinSequence:
+  SEROUT 14, 84, [12, 148, "  Y O U   W O N   ", 175, ":D"]
+  SEROUT 14, 84, [168, "Your Time: ", DEC4 time / 100, ".", DEC2 time // 100]
+  SEROUT 14, 84, [210, 218, 230,231,226,220, 217 ,231, 218 ,227, 231, 219 ,223, 218, 208]
+  PAUSE 3000
+  GOSUB gameRestart
+RETURN
+'----------------------------------------
+checkLoseCondition:
+  IF isGameOver = 1 THEN
+    SEROUT 14, 84, [12, 148, "  G A M E O V E R  ", 177, ":("]
+    SEROUT 14, 84, 100, [210, 228, 227, 223, 220, 208]
+    PAUSE 3000
+    GOSUB gameRestart
+  ENDIF
+RETURN
+'----------------------------------------
+getKeypadInput:
+  keypad = 0
+  OUTL = %00000000 ' Initialize IO
+  DIRL = %00000000
+  FOR row = 0 TO 3
+    DIRB = %1111 ' Set columns (P7-P4) as outputs
+    OUTB = %0000 ' Pull columns low (act as pull down)
+    OUTA = 1 << row ' Set rows high one by one
+    DIRA = 1 << row
+    temp = 0 ' Reset temp variable to 0
+    FOR column = 0 TO 3
+      INPUT (column + 4) ' Set columns as inputs
+      temp = temp | (INB & (1 << column)) ' Poll column state and store in temp
+    NEXT
+    keypad = keypad << 4 | (Temp REV 4) ' Store keypad value
+  NEXT
+
+  ' If a key is being pressed:
+  IF keypad > 0 THEN
+    ' keypad = 1 means 1 is pressed, keypad = 16 means 2 is pressed, keypad = 8 means star is pressed
+    IF keypad = 1 THEN
+      dif = 0
+      SEROUT 14, 84, [223]
+      GOSUB startGame
+    ELSEIF keypad = 16 THEN
+      dif = 1
+      SEROUT 14, 84, [223]
+      GOSUB startGame
+    ELSE
+      wrongPress = 1
+      IF keypad = 8 THEN
+        start = 1
+      ENDIF
+    ENDIF
+
+    SEROUT 14, 84, [223]
+    PAUSE 250
+  ENDIF
+RETURN
+'-------------------------------
+fillWall:
+  IF moveDir > 0 THEN
+    tempTile = previousTile
+
+    ix = tempTile / 8
+    iy = tempTile // 8
+
+    mask = 1 << (7 - iy)
+
+    visited(ix) = visited(ix) | mask
+
+    'SEROUT 14, 84, [(tempTile + 128), 5] 'Fills the previous wall
+  ENDIF
+RETURN
