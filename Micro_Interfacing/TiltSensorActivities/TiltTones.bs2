@@ -1,0 +1,25 @@
+' BASIC Stamp Tilt Tones.bs2
+'
+' {$STAMP BS2}
+' {$PBASIC 2.5}
+
+led    VAR  Nib                               ' I/O pin number of LED to turn on/off
+note   VAR  Word                              ' note to play, in Hz
+index  VAR  Nib                               ' holds state of tilt sensor's output pins
+beat   CON  500                               ' how long to play each note, in ms
+
+index = 0                                     ' initialize index to 0
+
+DO
+
+ index.BIT0 = IN0                            ' read P14 tilt sensor state, store in bit 0 of index
+ index.BIT1 = IN1                            ' read P15 tilt sensor state, store in bit 1 of index
+
+ LOOKUP index,[4, 6, 8, 10], led              ' index selects LED to light
+ LOOKUP index,[2093, 2349, 2637, 2794], note  ' index selects a note (frequency in Hz) to play
+
+ HIGH led                                     ' turn LED on
+ FREQOUT 12, beat, note                        ' play note on P1 piezo for beat ms
+ LOW led                                      ' turn LED off
+
+LOOP

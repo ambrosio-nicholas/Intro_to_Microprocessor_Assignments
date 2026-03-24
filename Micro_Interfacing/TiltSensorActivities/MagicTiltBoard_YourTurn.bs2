@@ -1,0 +1,106 @@
+' -----[ Title ]--------------------------------------------------------------
+' MagicBS2Board.bs2
+' Ask a question & get a response from the wise Magic BS2 Board!
+
+' {$STAMP BS2}
+' {$PBASIC 2.5}
+
+' -----[ I/O Definitions ]----------------------------------------------------
+LCDpin            PIN    14                     ' Serial LCD pin
+
+' -----[ Variables ]----------------------------------------------------------
+old0              VAR    Bit                    ' Variable space for previous
+old1              VAR    Bit                    ' tilt states
+
+counter           VAR    Nib                    ' Counter variable
+
+generateMessage   VAR    Word                   ' Variable space for randomizing
+displayMessage    VAR    generateMessage.NIB0   ' and displaying answers
+
+' -----[ Initialization ]-----------------------------------------------------
+SEROUT LCDpin, 84, [22, 12, 17]                     ' Initialize the LCD
+PAUSE 500                                       ' Wait for battery connection
+
+DO
+  SEROUT LCDpin, 84, [12,128, "ASK A QUESTION &",    ' Prompt user response
+                      148, "SHAKE FOR ANSWER"]
+  PAUSE 200
+
+  DO
+    old0 = IN0: old1 = IN1                        ' Loop until board is
+    RANDOM generateMessage                        ' shaken & randomize answer
+  LOOP UNTIL (old0 <> IN0 OR old1 <> IN1)
+
+  SEROUT LCDpin, 84, [12]                         ' Clear the LCD
+
+  ' -----[ Main Routine ]-------------------------------------------------------
+
+  DO
+    old0 = IN0: old1 = IN1                        ' Save tilt states to variables
+    PAUSE 100                                     ' Pause for human speeds
+
+    IF old0 <> IN0 OR old1 <> IN1 THEN            ' Compare to current state &
+      RANDOM generateMessage                      ' if different, board is shaking
+      counter = 0                                 ' Reset counter to 0
+    ELSE                                          ' If they repeat, track with
+      counter = counter + 1                       ' counter variable
+      IF counter > 10 THEN                        ' If it's been the same for 10
+        GOSUB Display_Answer                      ' cycles, display the answer
+      ENDIF
+    ENDIF
+  LOOP UNTIL counter > 10                         ' Loop until shaking stops
+                                                  ' Wait 5 seconds before asking again
+PAUSE 5000
+LOOP
+
+' -----[ Subroutine - Display_Answer ]----------------------------------------
+' Displays answers based on value in displayMessage & ends the program
+
+Display_Answer:
+  SELECT displayMessage
+    CASE 0
+      SEROUT LCDpin, 84, [128, " PBASICALLY YES"]
+    CASE 1
+      SEROUT LCDpin, 84, [128, "  THE BOE-BOTS",
+                          148, "    SAY YES"]
+    CASE 2
+      SEROUT LCDpin, 84, [128, " RESPONSE FRIED",
+                          148, "   ASK LATER"]
+    CASE 3
+      SEROUT LCDpin, 84, [128, "  DEBUGGING...",
+                          148, "   TRY AGAIN"]
+    CASE 4
+      SEROUT LCDpin, 84, [128, " THE SCRIBBLERS",
+                          148, "     SAY NO    "]
+    CASE 5
+      SEROUT LCDpin, 84, [128, " PROPELLERY NOT"]
+    CASE 6
+      SEROUT LCDpin, 84, [128, " REPLY STATIC-Y",
+                          148, "    ASK AGAIN"]
+    CASE 7
+      SEROUT LCDpin, 84, [128, "  CURRENTLY NO"]
+    CASE 8
+      SEROUT LCDpin, 84, [128, " AMMETERS POINT",
+                          148, "     TO YES"]
+    CASE 9
+      SEROUT LCDpin, 84, [128, "AS THE STINGRAYS",
+                          148, "  SEE IT - YES"]
+    CASE 10
+      SEROUT LCDpin, 84, [128, " VOLTAGE SPIKE",
+                          148, " CAN'T SAY NOW"]
+    CASE 11
+      SEROUT LCDpin, 84, [128, "  AS I SPIN IT",
+                          148, "     ...YES"]
+    CASE 12
+      SEROUT LCDpin, 84, [128, " YOU WILL MEET",
+                          148, " NO RESISTANCE"]
+    CASE 13
+      SEROUT LCDpin, 84, [128, "DON'T CNT ON IT"]
+    CASE 14
+      SEROUT LCDpin, 84, [128, "THE POLARITY IS",
+                          148, "   POSITIVE"]
+    CASE ELSE
+      SEROUT LCDpin, 84, [128, " IN-VARIABLE-Y",
+                          148, "     YES"]
+    ENDSELECT
+RETURN

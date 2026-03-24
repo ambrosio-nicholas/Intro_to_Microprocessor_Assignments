@@ -128,11 +128,20 @@ getTileType:
 RETURN
 '---------------------------------------------
 getMoveDir:
-  moveDir = 1
-  DEBUG HOME
-  DEBUG ? IN10
-  DEBUG ? IN11
-  DEBUG ? time
+  IF IN10 = 0 THEN
+    IF IN11 = 0 THEN
+      moveDir = 4
+    ELSE
+      moveDir = 3
+    ENDIF
+  ELSE
+    IF IN11 = 0 THEN
+      moveDir = 1
+    ELSE
+      moveDir = 2
+    ENDIF
+  ENDIF
+
 RETURN
 '---------------------------------------------
 boundsAndLoseCheck:
@@ -238,7 +247,7 @@ RETURN
 '----------------------------------------
 playWinSequence:
   SEROUT 14, 84, [12, 148, "  Y O U   W O N   ", 175, ":D"]
-  SEROUT 14, 84, [168, "Your Time: ", DEC4 time / 100, ".", DEC2 time // 100]
+  SEROUT 14, 84, [168, "Your Time: ", DEC4 time / 100, ".", DEC2 time // 100, "s"]
   SEROUT 14, 84, [210, 218, 230,231,226,220, 217 ,231, 218 ,227, 231, 219 ,223, 218, 208]
   PAUSE 3000
   GOSUB gameRestart
