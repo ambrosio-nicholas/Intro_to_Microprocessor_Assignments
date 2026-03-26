@@ -18,7 +18,7 @@ generateMessage   VAR    Word                   ' Variable space for randomizing
 displayMessage    VAR    generateMessage.NIB0   ' and displaying answers
 
 ' -----[ Initialization ]-----------------------------------------------------
-SEROUT LCDpin, 84, [22, 12]                     ' Initialize the LCD
+SEROUT LCDpin, 84, [22, 12,17]                     ' Initialize the LCD
 PAUSE 500                                       ' Wait for battery connection
 
 SEROUT LCDpin, 84, [128, "ASK A QUESTION &",    ' Prompt user response
