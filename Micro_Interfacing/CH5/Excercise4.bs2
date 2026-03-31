@@ -1,0 +1,16 @@
+'{$STAMP BS2} ' Stamp/PBASIC directives
+'{$PBASIC 2.5}
+
+x VAR Byte
+y VAR Byte
+
+FOR x = 1 TO 15
+  FOR y = 1 TO 5
+    DEBUG CRSRXY, x, y, "*"
+  NEXT
+NEXT
+
+' For excersize 5
+' The number of characters to store equals 5 x 3 = 15. The minimum variable size
+' to use would be a Nib (4 bits), with which the addresses could range from 0 TO
+' 15. There would be room FOR only one (1) additional character.

@@ -1,0 +1,96 @@
+'{$STAMP BS2} ' Stamp/PBASIC directives
+'{$PBASIC 2.5}
+' -----[ EEPROM Data ]--------------------------------------------------------
+' Store background to EEPROM ' 3 backgrounds used in game
+Maze DATA @0, HOME, ' Maze background
+"#####################", CR,
+"######   $   ########", CR,
+"##      ###       ###", CR,
+"#   ###########   ###", CR,
+"#$     #         ####", CR,
+"#####  #   $ #####WIN", CR,
+"#     ##    ## $    #", CR,
+"# $  ###########  # #", CR,
+"#   ##$##         # #", CR,
+"#          ######## #", CR,
+"#####################", CR
+YouLose DATA @243, HOME, ' YouLose background
+"#####################", CR,
+"#####################", CR,
+"###   #######    ####", CR,
+"###   #######    ####", CR,
+"#####################", CR,
+"########## ##########", CR,
+"#####################", CR,
+"###              ####", CR,
+"###   YOU LOSE   ####", CR,
+"###              ####", CR,
+"#####################", CR
+YouWin DATA @486, HOME, ' YouWin background
+"     ###########     ", CR,
+" #################   ", CR,
+"#####   #####   #####", CR,
+"####     ###     ####", CR,
+"# ###   #####   ### #", CR,
+"# ###############   #", CR,
+"##   ###########   ##", CR,
+"##                 ##", CR,
+" #### YOU WIN  #### ", CR,
+"   ####      #### ", CR,
+"     ######### ", CR
+' -----[ Variables ]----------------------------------------------------------
+x VAR Word ' x & y tilts & graph coordinates
+y VAR Word
+index VAR Word ' EEPROM address and character
+char VAR Byte
+symbol VAR Word ' Symbol address for EEPROM DATA
+points VAR Byte ' Points during game
+' -----[ Initialization ]-----------------------------------------------------
+x = 10 ' Start game character in middle
+y = 5
+DEBUG CLS ' Clear screen
+' Display maze.
+symbol = Maze ' Set Symbol to Maze EEPROM DATA
+FOR index = 0 TO 242 ' Display maze
+READ index + symbol, char
+DEBUG char
+NEXT
+' -----[ Main Routine ]-------------------------------------------------------
+DO
+' Display background at cursor position.
+index = (22 * y) + x + 1 ' Coordinates -> EEPROM address
+READ index + symbol, char ' Get background character
+DEBUG CRSRXY, x, y, char ' Display background character
+PAUSE 50 ' Pause for blink effect
+' Measure tilt and calculate cursor position.
+PULSIN 6, 1, x ' Get Ax and Ay
+PULSIN 7, 1, y
+x = (x MIN 1875 MAX 3125) - 1875 ** 1101 ' Calculate x position
+y = (y MIN 1875 MAX 3125) - 1875 ** 576 ' Calculate y position
+y = 10 - y
+' Display asterisk at new position.
+DEBUG CRSRXY, x, y, "*" ' Display asterisk
+PAUSE 50 ' Pause again for blink effect
+' Display score
+DEBUG CRSRXY, 0, 11, ' Display points
+"Score: ", DEC3 points
+' Did you move the asterisk over a $, W, I, N, or #?
+SELECT char ' Check background character
+CASE "$" ' If "$"
+points = points + 10 ' Add points
+WRITE index, "%" ' Write "%" over "$"
+CASE "#" ' If "#", set Symbol to YouLose
+symbol = YouLose
+CASE "W", "I", "N" ' If W,I,orN, Symbol -> YouWin
+symbol = YouWin
+ENDSELECT
+' This routine gets skipped while symbol is still = Maze. If symbol
+' was changed to YouWin or YouLose, display new background and end game.
+IF (symbol = YouWin) OR (symbol = YouLose) THEN
+FOR index = 0 TO 242 ' 242 characters
+READ index + symbol, char ' Get character
+DEBUG char ' Display character
+NEXT ' Next iteration of loop
+END ' End game
+ENDIF ' End symbol-if code block
+LOOP ' Repeat main loop

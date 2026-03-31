@@ -1,0 +1,12 @@
+'{$STAMP BS2} ' Stamp/PBASIC directives
+'{$PBASIC 2.5}
+
+DEBUG CLS,
+"   2|    ", CR,
+"   1|    ", CR,
+"----+----", CR,
+"-2-1| 1 2", CR,
+"  -2|    ", CR, CR
+
+
+'For excercise3: X axis scale is 2 and offset is 10; Y axis, scale is -1 and offset is 5

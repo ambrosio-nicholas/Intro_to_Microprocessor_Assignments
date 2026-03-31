@@ -1,0 +1,5 @@
+'{$STAMP BS2} ' Stamp/PBASIC directives
+'{$PBASIC 2.5}
+
+DEBUG CRSRXY, 5, 7,
+"* this is the coordinate (5,7) in the Debug Terminal"

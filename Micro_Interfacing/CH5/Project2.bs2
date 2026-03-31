@@ -1,0 +1,28 @@
+'{$STAMP BS2}
+'{$PBASIC 2.5}
+' Displays negative coords correctly
+x VAR Word
+y VAR Word
+temp VAR Byte
+DEBUG CLS,
+"     3|      ", CR,
+"     2|      ", CR,
+"     1|      ", CR,
+"------+------", CR,
+"-3-2-1| 1 2 3", CR,
+"    -2|      ", CR,
+"    -3|      ", CR, CR
+DO
+DEBUG "Type X coordinate: "
+DEBUGIN SDEC1 x
+DEBUG CR, "Type Y coordinate: "
+DEBUGIN SDEC1 y
+DEBUG CRSRXY, 15, 3, "(X,Y) = (",
+SDEC x, ",", SDEC y, ")", CLREOL
+x = (x * 2) + 6
+y = 3 - y
+DEBUG CRSRXY, x, y, "*"
+DEBUG CRSRXY, 0, 10, "Press any Key..."
+DEBUGIN temp
+DEBUG CRSRXY, 0, 8, CLRDN
+LOOP

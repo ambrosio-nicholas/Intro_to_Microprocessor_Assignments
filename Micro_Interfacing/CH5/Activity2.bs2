@@ -1,0 +1,22 @@
+'{$STAMP BS2} ' Stamp & PBASIC Directives
+'{$PBASIC 2.5}
+
+index VAR Byte ' Variables
+character VAR Byte
+
+DATA CLS, ' 0 ' Store background in EEPROM
+"     3|      ", CR, ' 14
+"     2|      ", CR, ' 28
+"     1|      ", CR, ' 42
+"------+------", CR, ' 56
+"-3-2-1| 1 2 3", CR, ' 70
+"    -2|      ", CR, ' 84
+"    -3|      ", CR, CR ' 98 + 1 = 99
+FOR index = 0 TO 99 ' Retrieve and display background
+  READ index, character
+  DEBUG character
+NEXT
+
+END
+
+' Your Turn is just checking the eeprom memory

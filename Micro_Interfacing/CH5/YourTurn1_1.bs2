@@ -1,0 +1,25 @@
+'{$STAMP BS2}
+'{$PBASIC 2.5}
+x VAR Word
+y VAR Word
+temp VAR Byte
+DEBUG CLS,
+"0123456789X", CR,
+"1 ", CR,
+"2 ", CR,
+"3 ", CR,
+"4 ", CR,
+"5 ", CR,
+"Y ", CR, CR
+DO
+  DEBUG "Type X coordinate: "
+  DEBUGIN DEC1 x
+  DEBUG CR, "Type Y coordinate: "
+  DEBUGIN DEC1 y
+  Y = y MAX 5 MIN 1 ' <--- Add
+  X = x MIN 1 ' <--- Add
+  DEBUG CRSRXY, x, y, "*"
+  DEBUG CRSRXY, 0, 10, "Press any key..."
+  DEBUGIN temp
+  DEBUG CRSRXY, 0, 8, CLRDN
+LOOP

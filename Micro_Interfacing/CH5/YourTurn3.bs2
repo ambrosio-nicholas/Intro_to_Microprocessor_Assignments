@@ -1,0 +1,60 @@
+' Smart Sensors and Applications - BubbleGraph.bs2
+' Position of bubble in tilt sensor displays on graph in Debug Terminal
+'{$STAMP BS2} ' Stamp/PBASIC directives
+'{$PBASIC 2.5}
+' -----[ EEPROM Data ]--------------------------------------------------------
+' Store background to EEPROM ' Address of last char on row
+DATA CLS, ' 0
+"        5^Y          ", CR, ' 22
+"         4|          ", CR, ' 44
+"         3|          ", CR, ' 66
+"         2|          ", CR, ' 88
+"         1|         X", CR, ' 110
+"----------+--------->", CR, ' 132
+"-5-4-3-2-1| 1 2 3 4 5", CR, ' 154
+"        -2|          ", CR, ' 176
+"        -3|          ", CR, ' 198
+"        -4|          ", CR, ' 220
+"        -5|          ", CR ' 242
+' -----[ Variables ]----------------------------------------------------------
+x VAR Word ' Store current position
+y VAR Word
+index VAR Word ' READ index/character storage
+char VAR Byte
+temp VAR Byte
+' -----[ Initialization ]-----------------------------------------------------
+FOR index = 0 TO 242 ' Read & display background
+READ index, char
+DEBUG char
+NEXT
+' -----[ Main Routine ]-------------------------------------------------------
+DO ' Begin main routine
+' Replace asterisk with background character.
+' Replace asterisk with background character (modified).
+FOR temp = ((x MIN 1) - 1) TO (x MAX 19 + 1)
+index = (22 * y) + temp + 1
+READ index, char
+DEBUG CRSRXY, temp, y, char
+NEXT
+FOR temp = (y MIN 1 - 1) TO (y MAX 9 + 1)
+index = (22 * temp) + x + 1
+READ index, char
+DEBUG CRSRXY, x, temp, char
+NEXT
+PAUSE 50
+' Measure tilt.
+PULSIN 6, 1, x ' Get Ax and Ay
+PULSIN 7, 1, y
+' Calculate cursor position.
+x = (x MIN 1875 MAX 3125) - 1875 ** 1101 ' Calculate x position
+y = (y MIN 1875 MAX 3125) - 1875 ** 576 ' Calculate y position
+y = 10 - y
+' Display asterisk at new cursor position.
+' Display asterisk at new cursor position (modified).
+DEBUG CRSRXY, x, y, "*",
+CRSRXY, x MAX 19 + 1, y, "*",
+CRSRXY, x, y MAX 9 + 1, "*",
+CRSRXY, x MIN 1 - 1, y, "*",
+CRSRXY, x, y MIN 1 - 1, "*"
+PAUSE 50
+LOOP ' Repeat main routine

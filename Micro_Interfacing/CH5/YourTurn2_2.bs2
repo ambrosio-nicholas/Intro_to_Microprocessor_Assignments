@@ -1,0 +1,42 @@
+'{$STAMP BS2} ' Stamp/PBASIC directives
+'{$PBASIC 2.5}
+' -----[ Variables ]-------------------------------------------------------
+x VAR Word ' Store current position
+y VAR Word
+xOld VAR Nib ' Store previous position
+yOld VAR Nib
+temp VAR Byte ' Dummy variable for DEBUGIN
+index VAR Byte ' READ index/character storage
+character VAR Byte
+' -----[ EEPROM Data ]-----------------------------------------------------
+DATA CLS, ' Background data
+"      3|     ", CR, ' 14
+"      2|     ", CR, ' 28
+"      1|     ", CR, ' 42
+"------+------", CR, ' 56
+"-3-2-1| 1 2 3", CR, ' 70
+"     -2|     ", CR, ' 84
+"     -3|     ", CR, CR ' 98 + 1 = 99
+' -----[ Initialization ]--------------------------------------------------
+FOR index = 0 TO 99 ' Display background
+  READ index, character
+  DEBUG character
+NEXT
+'
+' -----[ Main Routine ]------------------------------------------------  THIS YOUR TURN REPLACES TEH MAIN FUNCTION HERE
+DO
+  index = (14 * y) + x + 1 ' Redisplay background
+  READ index, character
+  DEBUG CRSRXY, x, y, character
+  DEBUG CRSRXY, 0, 8, ' Get new coordinates
+  "Type X coordinate: "
+  DEBUGIN SDEC1 x
+  DEBUG CR, "Type Y coordinate: "
+  DEBUGIN SDEC1 y
+  x = (x * 2) + 6 ' Cartesian to DEBUG values
+  y = 3 - y
+  DEBUG CRSRXY, x, y, "*" ' Display asterisk
+  DEBUG CRSRXY, 0, 10, "Press any Key..." ' Wait for user
+  DEBUGIN temp
+  DEBUG CRSRXY, 0, 8, CLRDN ' Clear old info
+LOOP

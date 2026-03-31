@@ -1,0 +1,44 @@
+'{$STAMP BS2} ' Stamp/PBASIC directives
+'{$PBASIC 2.5}
+' -----[ Variables ]-------------------------------------------------------
+x VAR Word ' Store current position
+y VAR Word
+xOld VAR Nib ' Store previous position
+yOld VAR Nib
+temp VAR Byte ' Dummy variable for DEBUGIN
+index VAR Byte ' READ index/character storage
+character VAR Byte
+' -----[ EEPROM Data ]-----------------------------------------------------
+DATA CLS, ' Background data
+"      3|     ", CR, ' 14
+"      2|     ", CR, ' 28
+"      1|     ", CR, ' 42
+"------+------", CR, ' 56
+"-3-2-1| 1 2 3", CR, ' 70
+"     -2|     ", CR, ' 84
+"     -3|     ", CR, CR ' 98 + 1 = 99
+' -----[ Initialization ]--------------------------------------------------
+FOR index = 0 TO 99 ' Display background
+  READ index, character
+  DEBUG character
+NEXT
+'
+' -----[ Main Routine ]------------------------------------------------  THIS YOUR TURN IS an animation
+DO
+  FOR y = 0 TO 6
+    FOR temp = 1 TO 2
+      FOR x = 0 TO 12
+      IF (temp.BIT0 = 1) THEN
+        DEBUG CRSRXY, x, y, "*"
+      ELSE
+        index = (14 * yOld) + xOld + 1
+        READ index, character
+        DEBUG CRSRXY, xOld, yOld, character
+        xOld = x
+        yOld = y
+      ENDIF
+      PAUSE 10
+      NEXT
+    NEXT
+  NEXT
+LOOP
