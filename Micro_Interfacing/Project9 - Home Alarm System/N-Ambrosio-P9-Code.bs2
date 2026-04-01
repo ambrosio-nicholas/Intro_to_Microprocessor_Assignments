@@ -34,24 +34,20 @@ isStar VAR Bit
 ' Screen Initialization
 SEROUT 14, 84, 50, [22,12,17,209] ' Turn on, clear, and backlight the LCD, also set note length to short (LCD is on pin 14)
 PAUSE 150
-' PIR Sensor Initialization
-time = 0
-DO
-  SEROUT 14, 84, [128,"System is",148,"Initializing     "]
-  SEROUT 14, 84, 100, [".",".",".",".","."]
-  time = time + 500
-LOOP UNTIL time = 10000
-SEROUT 14, 84, [223,227]
 
 '---------------------------Main-Program---------------------------
 main:
   state = 0
+  FOR passwordLength = 6 TO 0
+    password(passwordLength) = 16
+  NEXT
 
-  SEROUT 14, 84, 5, [128, "Please enter a new",148,"password to arm.",168, "Press # to submit:",188]
+  SEROUT 14, 84, 5, [128, "Please enter a new",148,"password to arm.",168, "Press # to submit:",188,"                    ",188]
 
   GOSUB getNewPassword
 
 armed:
+  time = 0
   state = 1
   passwordLength = 0
   isStar = 0
@@ -75,11 +71,13 @@ armed:
 
     ' Pause if no key was entered
     IF keypad = 0 THEN
-      PAUSE 250
+      PAUSE 100
     ENDIF
   LOOP
 
 unarmed:
+  SEROUT 14, 84, 5, [12, "System is Ready.",148, "Enter password", 168, "and # to arm",223, 228, 188]
+  time = 0
   state = 2
   passwordLength = 0
   isStar = 0
@@ -95,11 +93,14 @@ unarmed:
 
     ' Pause if no key was entered
     IF keypad = 0 THEN
-      PAUSE 250
+      PAUSE 100
     ENDIF
   LOOP
 
 triggered:
+  SEROUT 14, 84, [12]
+  PAUSE 5
+  time = 0
   state = 3
   passwordLength = 0
   isStar = 0
@@ -112,18 +113,19 @@ triggered:
 
     GOSUB checkPassword
 
-    TOGGLE flipBit
     IF flipBit = 0 THEN
-      SEROUT 14, 84, [128,"CAUTION! INTRUDER!",148,"Enter Password",168,"to Disarm!", 218, 229, 188 + passwordLength] 'Have to move the cursor so the password still shwos up as typed
+      flipBit = 1
+      SEROUT 14, 84, [128,"CAUTION! INTRUDER!",148,"Enter Password",168,"and * to Disarm!    ", 218, 229, 188 + passwordLength] 'Have to move the cursor so the password still shwos up as typed
       HIGH 10
     ELSE
-      SEROUT 14, 84, [128,"                  ",148,"              ",168,"          ", 218, 223, 188 + passwordLength] 'Have to move the cursor so the password still shwos up as typed
+      flipBit = 0
+      SEROUT 14, 84, [128,"                  ",148,"              ",168,"                ", 218, 223, 188 + passwordLength] 'Have to move the cursor so the password still shwos up as typed
       LOW 10
     ENDIF
 
     ' Pause if no key was entered
     IF keypad = 0 THEN
-      PAUSE 250
+      PAUSE 100
     ENDIF
   LOOP
 
@@ -157,64 +159,71 @@ readAndDisplayKeypad:
     CASE 1:
       SEROUT 14, 84, [219, 223, "D"]
       password(passwordLength // 6) = 13
+      hasLetter = 1
     CASE 2:
       SEROUT 14, 84, [219, 222, "#"]
       isHash = 1
     CASE 4:
       SEROUT 14, 84, [219, 221, "0"]
       password(passwordLength // 6) = 0
+      hasNumber = 1
     CASE 8:
       SEROUT 14, 84, [219, 220, "*"]
       isStar = 1
     CASE 16:
       SEROUT 14, 84, [218, 231, "C"]
       password(passwordLength // 6) = 12
+      hasLetter = 1
     CASE 32:
       SEROUT 14, 84, [218, 230, "9"]
       password(passwordLength // 6) = 9
+      hasNumber = 1
     CASE 64:
       SEROUT 14, 84, [218, 229, "8"]
       password(passwordLength // 6) = 8
+      hasNumber = 1
     CASE 128:
       SEROUT 14, 84, [218, 228, "7"]
       password(passwordLength // 6) = 7
+      hasNumber = 1
     CASE 256:
       SEROUT 14, 84, [218, 227, "B"]
       password(passwordLength // 6) = 11
+      hasLetter = 1
     CASE 512:
       SEROUT 14, 84, [218, 226, "6"]
       password(passwordLength // 6) = 6
+      hasNumber = 1
     CASE 1024:
       SEROUT 14, 84, [218, 225, "5"]
       password(passwordLength // 6) = 5
+      hasNumber = 1
     CASE 2048:
       SEROUT 14, 84, [218, 224, "4"]
       password(passwordLength // 6) = 4
+      hasNumber = 1
     CASE 4096:
       SEROUT 14, 84, [218, 223, "A"]
       password(passwordLength // 6) = 10
+      hasLetter = 1
     CASE 8192:
       SEROUT 14, 84, [218, 222, "3"]
       password(passwordLength // 6) = 3
+      hasNumber = 1
     CASE 16384:
       SEROUT 14, 84, [218, 221, "2"]
       password(passwordLength // 6) = 2
+      hasNumber = 1
     CASE 32768:
       SEROUT 14, 84, [218, 220, "1"]
       password(passwordLength // 6) = 1
+      hasNumber = 1
 
     ENDSELECT
 
     passwordLength = passwordLength + 1
 
-    'Check if the new character is a number or letter and toggle the respective flag
-    IF password(passwordLength // 6) > 0 AND password(passwordLength // 6) < 10 THEN
-      hasNumber = 1
-    ELSEIF password(passwordLength // 6) > 9 THEN
-      hasLetter = 1
-    ENDIF
-
-    PAUSE 250
+    PAUSE 150
   ENDIF
 
 RETURN
@@ -233,7 +242,9 @@ getNewPassword:
 
     ' If no key has been pressed, add the appropriate amount of time to our variable
     IF keypad = 0 AND passwordLength > 0 THEN
-      time = time + 10
+      time = time + 50
+    ELSEIF keypad > 0 THEN
+      time = 0
     ENDIF
 
   LOOP UNTIL (isHash = 1) OR (time > 5000) 'Loops until the password submit key is pressed or a timeout (5 seconds)
@@ -242,13 +253,13 @@ getNewPassword:
     GOSUB main
   ENDIF
 
-  IF (passwordLength = 6) AND (hasNumber = 1) AND (hasLetter = 1) AND (isStar = 0) THEN
+  IF (passwordLength = 7) AND (hasNumber = 1) AND (hasLetter = 1) AND (isStar = 0) THEN '7 cause the hash adds 1 to the length
     'Password conditions are met, keep the password, and arm the thing
     isHash = 0
     isStar = 0
     state = 1
 
-    FOR passwordLength = 0 TO 5 'Or 6 idk
+    FOR passwordLength = 0 TO 5
       savedPassword(passwordLength) = password(passwordLength)
     NEXT
 
@@ -265,7 +276,9 @@ checkPassword:
   GOSUB readAndDisplayKeypad
 
   IF keypad = 0 AND passwordLength > 0 THEN 'They must've started the passcode, but no more key presses
-    time = time + 250
+    time = time + 150
+  ELSEIF keypad > 0 THEN
+    time = 0
   ENDIF
 
   IF time > 5000 THEN  ' If timed out, reset
@@ -281,8 +294,8 @@ checkPassword:
   'If they've entered a password in the armed state or the triggered state (star)
   IF isStar = 1 AND (state = 1 OR state = 3) THEN
     'Check to see if it matches
-    FOR passwordLength = 0 TO 5 'Or 6 idk
-      IF NOT (password(passwordLength) = savedPassword(passwordLength)) THEN
+    FOR passwordLength = 0 TO 5
+      IF NOT (password(passwordLength) = savedPassword(passwordLength)) OR isHash = 1 THEN
         GOSUB wrongPassword
       ENDIF
     NEXT
@@ -293,8 +306,8 @@ checkPassword:
   'If they've entered a password in the UnArmed state (hashtag)
   IF isHash = 1 AND state = 2 THEN
     'Check to see if it matches
-    FOR passwordLength = 0 TO 5 'Or 6 idk
-      IF NOT (password(passwordLength) = savedPassword(passwordLength)) THEN
+    FOR passwordLength = 0 TO 5
+      IF NOT (password(passwordLength) = savedPassword(passwordLength)) OR isStar = 1  THEN
         GOSUB wrongPassword
       ENDIF
     NEXT
@@ -305,7 +318,13 @@ checkPassword:
 RETURN
 '------------------------------------------------------
 wrongPassword:
+  FOR passwordLength = 5 TO 0
+    password(passwordLength) = 16
+  NEXT
   SEROUT 14, 84, 5, [12, "Wrong Code!",218,230,223]
+  HIGH 9
+  LOW 10
+  LOW 11
   PAUSE 2000
   IF state = 1 THEN
     GOSUB armed
