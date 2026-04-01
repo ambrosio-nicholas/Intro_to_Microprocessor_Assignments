@@ -60,7 +60,7 @@ armed:
   LOW 11
   'Beep twice
   SEROUT 14, 84, 50, [218, 223, 223]
-  SEROUT 14, 84, 5, [12, "System is Armed.", 148, "Enter Password", 168, "to Disarm.", 188]
+  SEROUT 14, 84, 5, [12, "System is Armed.", 148, "Enter Password", 168, "and * to Disarm.", 188]
 
   'Should flash red LED, detect intruders, and be able to be disarmed
   DO
@@ -114,7 +114,7 @@ triggered:
 
     TOGGLE flipBit
     IF flipBit = 0 THEN
-      SEROUT 14, 84, [128,"CAUTION! INTRUDER!",148,"Enter Password",168,"To Disarm!", 218, 229, 188 + passwordLength] 'Have to move the cursor so the password still shwos up as typed
+      SEROUT 14, 84, [128,"CAUTION! INTRUDER!",148,"Enter Password",168,"to Disarm!", 218, 229, 188 + passwordLength] 'Have to move the cursor so the password still shwos up as typed
       HIGH 10
     ELSE
       SEROUT 14, 84, [128,"                  ",148,"              ",168,"          ", 218, 223, 188 + passwordLength] 'Have to move the cursor so the password still shwos up as typed
@@ -269,10 +269,16 @@ checkPassword:
   ENDIF
 
   IF time > 5000 THEN  ' If timed out, reset
-    GOSUB armed
+    IF state = 1 THEN
+      GOSUB armed
+    ELSEIF state = 2 THEN
+      GOSUB unarmed
+    ELSEIF state = 3 THEN
+      GOSUB triggered
+    ENDIF
   ENDIF
 
-  'If they've entered a password in the armed state or the triggered state
+  'If they've entered a password in the armed state or the triggered state (star)
   IF isStar = 1 AND (state = 1 OR state = 3) THEN
     'Check to see if it matches
     FOR passwordLength = 0 TO 5 'Or 6 idk
@@ -284,7 +290,7 @@ checkPassword:
     GOSUB unarmed
   ENDIF
 
-  'If they've entered a password in the UnArmed state
+  'If they've entered a password in the UnArmed state (hashtag)
   IF isHash = 1 AND state = 2 THEN
     'Check to see if it matches
     FOR passwordLength = 0 TO 5 'Or 6 idk
