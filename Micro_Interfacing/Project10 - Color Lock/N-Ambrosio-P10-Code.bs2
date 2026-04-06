@@ -1,0 +1,276 @@
+' Nicholas Ambrosio - Project 9 - Due: April 7, 2026
+' {$STAMP BS2}
+' {$PBASIC 2.5}
+
+' Pin 15 is the ColorPAL sensor
+' Pin 14 is LCD
+' Pin 13 is Servo
+' Pin 11 is Green LED
+' Pin 9 is Red LED
+' Pins 0-7 are Keypad
+
+'--------------------------Variables-----------------------------------
+
+' Keyboard Variables
+row VAR Nib 'for row counting
+column VAR Nib 'for column counting
+keypad VAR Word 'keypad output
+temp VAR Nib ' Variable space for polling column states
+
+state VAR Nib ' Used to track what process we're in. State 0: need new password. State 1: Locked. State 2: Unlocked
+servoPos VAR Word ' Used to set the servo in the right position
+
+' Password Variables
+password VAR Nib (6)
+savedPassword VAR Nib (6)
+passwordLength VAR Nib
+hasGreen VAR Bit
+hasBlue VAR Bit
+hasYellow VAR Bit
+hasRed VAR Bit
+hasBrown VAR Bit
+hasPink VAR Bit
+
+' Color Sensor Variables
+red VAR Word
+green VAR Word
+blue VAR Word
+clr VAR Nib ' 0=NoColorWeUse 1=Green 2=Blue 3=Yellow 4=Red 5=Brown 6=Pink
+lastClr VAR Nib ' tracks the last color recorded
+
+'-----------------------------------------Program-------------------------------------------------
+' Screen Initialization
+SEROUT 14, 84, 50, [22,12,17,209] ' Turn on, clear, and backlight the LCD, also set note length to short (LCD is on pin 14)
+servoPos = 1250
+GOSUB unlock
+PAUSE 150
+'---------------------------Main-Program---------------------------
+main:
+  SEROUT 14, 84, 5, [12,223,"Set Code:", 148]
+  GOSUB getNewPassword
+  SEROUT 14, 84, 5, [12,"System is Armed",148,223,227]
+
+locked:
+  GOSUB lock
+  LOW 11
+  HIGH 9
+  SEROUT 14, 84, 5, [12,"Door is Locked",148,218,230,223]
+  DO
+    GOSUB readAndDisplayKeypad
+    GOSUB getColor
+    GOSUB checkPassword
+    'PULSOUT 13, servoPos
+  LOOP
+unlocked:
+  SEROUT 14,84,[223,228]
+  GOSUB unlock
+  HIGH 11
+  LOW 9
+  SEROUT 14,84, 5, [12,"Door is Open"]
+  PAUSE 5000
+  FOR temp = 0 TO 5
+    password(temp) = 0
+  NEXT
+  passwordLength = 0
+  GOSUB locked
+END
+'------------------------------------------SubRoutines-----------------------------------------------
+readAndDisplayKeypad:
+  keypad = 0
+  OUTL = %00000000 ' Initialize IO
+  DIRL = %00000000
+  FOR row = 0 TO 3
+    DIRB = %1111 ' Set columns (P7-P4) as outputs
+    OUTB = %0000 ' Pull columns low (act as pull down)
+    OUTA = 1 << row ' Set rows high one by one
+    DIRA = 1 << row
+    temp = 0 ' Reset temp variable to 0
+    FOR column = 0 TO 3
+      INPUT (column + 4) ' Set columns as inputs
+      temp = temp | (INB & (1 << column)) ' Poll column state and store in temp
+    NEXT
+    keypad = keypad << 4 | (Temp REV 4) ' Store keypad value
+  NEXT
+
+  ' If a key is being pressed:
+  IF keypad > 0 THEN
+    ' Keep track of a number or a letter being entered (good password needs both!)
+    ' Store each keypress into a passcode, and update the codeLength with each press.
+    ' Make sure to not affect any overflow (store passcode in the passcodeLength // 6)
+    SELECT keypad
+
+    CASE 8:
+      SEROUT 14, 84, [219, 220, "*"]
+    CASE 512:
+      SEROUT 14, 84, [218, 226, "Pnk "]
+      password(passwordLength // 6) = 6
+      hasPink = 1
+    CASE 1024:
+      SEROUT 14, 84, [218, 225, "Brn "]
+      password(passwordLength // 6) = 5
+      hasBrown = 1
+    CASE 2048:
+      SEROUT 14, 84, [218, 224, "Red "]
+      password(passwordLength // 6) = 4
+      hasRed = 1
+    CASE 8192:
+      SEROUT 14, 84, [218, 222, "Ylw "]
+      password(passwordLength // 6) = 3
+      hasYellow = 1
+    CASE 16384:
+      SEROUT 14, 84, [218, 221, "Blu "]
+      password(passwordLength // 6) = 2
+      hasBlue = 1
+    CASE 32768:
+      SEROUT 14, 84, [218, 220, "Grn "]
+      password(passwordLength // 6) = 1
+      hasGreen = 1
+
+    ENDSELECT
+
+    passwordLength = passwordLength + 1
+
+    PAUSE 150
+  ENDIF
+
+RETURN
+'----------------------------------------------------------------
+getColor:
+  SEROUT 15, 32887, ["= m !"]
+  SERIN 15, 32887, [HEX3 red, HEX3 green, HEX3 blue]
+
+  lastClr = clr 'Save previous color
+  clr = 0 'No Color
+  IF red < 15 THEN ' Blue and Green both had less than 10 Red component
+    IF green < 260 AND green > 230 THEN
+      IF blue < 108 AND blue > 78 THEN
+            clr = 1 'Green
+      ENDIF
+    ELSEIF green < 205 AND green > 175 THEN
+      IF blue < 381 AND blue > 353 THEN
+        clr = 2 'Blue
+      ENDIF
+    ENDIF
+  ELSEIF red < 360 AND red > 331 THEN ' Red and Pink both had a 346 Red component
+    IF green < 125 AND green > 85 THEN ' Red and Pink both had a 102ish Green component
+      IF blue < 85 AND blue > 55 THEN
+          clr = 4 'Red
+      ELSEIF blue < 205 AND blue > 175 THEN
+        clr = 6 'Pink
+      ENDIF
+    ENDIF
+  ELSEIF red < 405 AND red > 375 THEN
+    IF green < 615 AND green > 585 THEN
+      IF blue < 115 AND blue > 85 THEN
+        clr = 3 'Yellow
+      ENDIF
+    ENDIF
+  ELSEIF red < 205 AND red > 175 THEN
+    IF green < 135 AND green > 105 THEN
+      IF blue < 85 AND blue > 55 THEN
+        clr = 5 'Brown
+      ENDIF
+    ENDIF
+  ENDIF
+
+  'If this isnt the same color as before, and isn't an unknown color, update the password
+  IF NOT(clr = lastClr) AND NOT(clr = 0) THEN
+    SELECT clr
+    CASE 1:
+      SEROUT 14, 84, [218, 220, "Grn "]
+      password(passwordLength // 6) = 1
+      hasGreen = 1
+    CASE 2:
+      password(passwordLength // 6) = 2
+      SEROUT 14, 84, [218, 221, "Blu "]
+      hasblue = 1
+    CASE 3:
+      password(passwordLength // 6) = 3
+      SEROUT 14, 84, [218, 222, "Ylw "]
+      hasYellow = 1
+    CASE 4:
+      password(passwordLength // 6) = 4
+      SEROUT 14, 84, [218, 224, "Red "]
+      hasRed = 1
+    CASE 5:
+      password(passwordLength // 6) = 5
+      SEROUT 14, 84, [218, 225, "Brn "]
+      hasBrown = 1
+    CASE 6:
+      password(passwordLength // 6) = 6
+      SEROUT 14, 84, [218, 226, "Pnk "]
+      hasPink = 1
+    ENDSELECT
+    passwordLength = passwordLength + 1
+  ENDIF
+RETURN
+'----------------------------------------------------------------
+getNewPassword:
+  passwordLength = 0
+  hasGreen = 0
+  hasBlue = 0
+  hasYellow = 0
+  hasRed = 0
+  hasBrown = 0
+  hasPink = 0
+
+  DO
+    GOSUB readAndDisplayKeypad
+    GOSUB getColor
+  LOOP UNTIL passwordLength = 6 'Loops until the password submit key is pressed or a timeout (5 seconds)
+
+  IF hasRed = 0 OR hasGreen = 0 OR hasYellow = 0 OR hasBrown = 0 OR hasPink = 0 OR hasBlue = 0 THEN 'DIDNT USE ALL COLORS
+    SEROUT 14, 84, 5, [12, "Code needs all clrs.Try again...",223,221]
+    PAUSE 1000
+    GOSUB main
+  ENDIF
+
+  FOR passwordLength = 0 TO 5
+    savedPassword(passwordLength) = password(passwordLength)
+  NEXT
+
+  passwordLength = 0
+
+RETURN
+'----------------------------------------------------------------
+checkPassword:
+  IF passwordLength = 6 THEN
+   FOR passwordLength = 0 TO 5
+      IF NOT (password(passwordLength) = savedPassword(passwordLength)) THEN
+        GOSUB wrongPassword
+      ENDIF
+    NEXT
+    ' The passwords matched up
+    GOSUB unlocked
+  ENDIF
+RETURN
+'----------------------------------------------------------------
+wrongPassword:
+  SEROUT 14, 84, 5, [12, "Wrong Code.",148,"Try again...",221,221]
+  PAUSE 1000
+  GOSUB locked
+RETURN
+'----------------------------------------------------------------
+lock:
+  servoPos = 350
+  FOR temp = 0 TO 15
+    PULSOUT 13, servoPos
+    PAUSE 20
+  NEXT
+  FOR temp = 0 TO 15
+    PULSOUT 13, servoPos
+    PAUSE 20
+  NEXT
+RETURN
+'----------------------------------------------------------------
+unlock:
+  servoPos = 1250
+  FOR temp = 0 TO 15
+    PULSOUT 13, servoPos
+    PAUSE 20
+  NEXT
+  FOR temp = 0 TO 15
+    PULSOUT 13, servoPos
+    PAUSE 20
+  NEXT
+RETURN
