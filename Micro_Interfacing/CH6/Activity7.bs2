@@ -1,0 +1,95 @@
+' Datalogs 500 x and y-axis acceleration measurements. (Take it on a bike wheel)
+'{$STAMP BS2}
+'{$PBASIC 2.5}
+' -----[ DATA Directives ]----------------------------------------------------
+Reset DATA 0
+Records DATA (1000)
+RecordsEnd DATA
+' -----[ Variables ]----------------------------------------------------------
+char VAR Byte
+eeIndex VAR Word
+value VAR Word
+x VAR value
+y VAR Word
+' -----[ Initialization ]-----------------------------------------------------
+Init:
+READ Reset, value
+value = value + 1
+WRITE Reset, value
+IF value // 2 = 0 THEN
+FOR char = 10 TO 0
+DEBUG CLS, "Datalogging starts", CR,
+"in ", DEC2 char, " seconds",
+CR, CR,
+"Press/release Reset", CR,
+"for menu..."
+FREQOUT 4, 50, 3750
+PAUSE 950
+NEXT
+GOSUB Record_Data
+ENDIF
+' -----[ Main Routine ]-------------------------------------------------------
+DO
+DEBUG CLS,
+"Press/Release Reset", CR,
+"to arm datalogger ", CR, CR,
+" - or - ", CR, CR,
+"Type C, R or D", CR,
+"C - Clear records", CR,
+"R - Record records", CR,
+"D - Display records", CR,
+">"
+DEBUGIN char
+DEBUG CR
+SELECT char
+CASE "C", "c"
+GOSUB Clear_Data
+CASE "R", "r"
+GOSUB Record_Data
+CASE "D", "d"
+GOSUB Display_Data
+CASE ELSE
+DEBUG CR, "Not a valid entry.",
+CR, "Try again."
+PAUSE 1500
+ENDSELECT
+LOOP
+' -----[ Subroutine - Clear_Data ]--------------------------------------------
+Clear_Data:
+DEBUG CR, "Clearing..."
+FOR eeIndex = Records TO RecordsEnd
+WRITE eeIndex, 0
+NEXT
+DEBUG CR, "Records cleared."
+PAUSE 1000
+RETURN
+' -----[ Subroutine - Record_Data ]-------------------------------------------
+Record_Data:
+FREQOUT 4, 75, 4000
+PAUSE 200
+FREQOUT 4, 75, 4000
+DEBUG CLS, "Recording..."
+FOR eeIndex = Records TO RecordsEnd STEP 4
+PULSIN 6, 1, x
+PULSIN 7, 1, y
+WRITE eeIndex, Word x
+WRITE eeIndex + 2, Word y
+NEXT
+FREQOUT 4, 200, 4000
+DEBUG CR, "End of records.",
+CR, "Press Enter for menu..."
+DEBUGIN char
+RETURN
+' -----[ Subroutine - Display_Data ]------------------------------------------
+Display_Data:
+DEBUG CR, "Index x-axis y-axis",
+CR, "----- ------ ------",
+CR
+FOR eeIndex = Records TO RecordsEnd STEP 4
+READ eeIndex, Word x
+READ eeIndex + 2, Word y
+DEBUG DEC eeIndex, CRSRX, 7, SDEC x, CRSRX, 14, SDEC y, CR
+NEXT
+DEBUG CR, "Press Enter for menu..."
+DEBUGIN char
+RETURN

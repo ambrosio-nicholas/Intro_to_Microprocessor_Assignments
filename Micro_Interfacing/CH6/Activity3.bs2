@@ -1,0 +1,87 @@
+' Demonstrates storing, retrieving and erasing values in EEPROM memory.
+'{$STAMP BS2}
+'{$PBASIC 2.5}
+' -----[ DATA Directives ]----------------------------------------------------
+Reset DATA 0
+Records DATA (10)
+RecordsEnd DATA
+' -----[ Variables ]----------------------------------------------------------
+char VAR Byte
+eeIndex VAR Word
+value VAR Word
+' -----[ Initialization ]---------------------------------------
+READ Reset, value
+value = value + 1
+WRITE Reset, value
+IF value // 2 = 0 THEN
+FOR char = 15 TO 0
+DEBUG CLS, "Datalogging starts", CR,
+"in ", DEC2 char, " seconds",
+CR, CR,
+"Press/release Reset", CR,
+"for menu..."
+FREQOUT 4, 50, 3750
+PAUSE 950
+NEXT
+GOTO Record_Data
+ENDIF
+' -----[ Main Routine ]-------------------------------------------------------
+DO
+DEBUG CLS,
+"Press/Release Reset", CR,
+"to arm datalogger ", CR, CR,
+" - or - ", CR, CR,
+"Type C, R or D", CR,
+"C - Clear records", CR,
+"R - Record records", CR,
+"D - Display records", CR,
+">"
+DEBUGIN char
+DEBUG CR
+SELECT char
+CASE "C", "c"
+GOSUB Clear_Data
+CASE "R", "r"
+GOSUB Record_Data
+CASE "D", "d"
+GOSUB Display_Data
+CASE ELSE
+DEBUG CR, "Not a valid entry.",
+CR, "Try again."
+PAUSE 1500
+ENDSELECT
+LOOP
+' -----[ Subroutine - Clear_Data ]--------------------------------------------
+Clear_Data:
+FOR eeIndex = Records TO RecordsEnd
+WRITE eeIndex, 100
+NEXT
+DEBUG CR, "Records cleared."
+PAUSE 1000
+RETURN
+' -----[ Subroutine - Record_Data ]-------------------------------------------
+Record_Data:
+DEBUG CR, "Enter values from -100 to 100", CR
+FOR eeIndex = Records TO RecordsEnd
+DEBUG "Record ", DEC eeIndex, " >"
+DEBUGIN SDEC value
+value = value + 100
+WRITE eeIndex, value
+NEXT
+DEBUG CR, "End of records.",
+CR, "Press Enter for menu..."
+DEBUGIN char
+RETURN
+' -----[ Subroutine - Display_Data ]------------------------------------------
+Display_Data:
+DEBUG CR, "Index Record",
+CR, "----- ------",
+CR
+FOR eeIndex = Records TO RecordsEnd
+READ eeIndex, value
+value = value - 100
+DEBUG DEC eeIndex, CRSRX, 7, SDEC value, CR
+NEXT
+DEBUG CR, "Press Enter for menu..."
+DEBUGIN char
+RETURN

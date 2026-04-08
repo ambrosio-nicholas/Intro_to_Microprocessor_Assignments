@@ -1,0 +1,19 @@
+' {$STAMP BS2}
+' {$PBASIC 2.5}
+StepLow CON 2900
+StepHigh CON 3300
+y VAR Word
+yOld VAR Word
+stepCnt VAR Word
+yOld = 3300
+PAUSE 250 ' Debounce the power supply
+SEROUT 14, 84, [22, 12,17] ' Start LCD & clear display
+PAUSE 5 ' Pause 5 ms for clear display
+DO
+PULSIN 7, 1, y
+IF (y <= 2900 AND yOld >= 3300) OR (y >= 3300 AND yOld <= 2900) THEN
+yOld = y
+stepCnt = stepCnt + 1
+ENDIF
+SEROUT 14, 84, [128, DEC5 stepCnt / 2]
+LOOP
