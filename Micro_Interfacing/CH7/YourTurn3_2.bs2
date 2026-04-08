@@ -1,0 +1,109 @@
+' {$STAMP BS2} ' Target device = BASIC Stamp 2
+' {$PBASIC 2.5} ' Language = PBASIC 2.5
+' -----[ I/O Pins ]-----------------------------------------------------------
+LcdPin PIN 14 ' I/O pin connected to LCD's RX
+' -----[ Constants ]----------------------------------------------------------
+T9600 CON 84 ' True, 8-bits, no parity, 9600
+LcdCls CON 12 ' Form feed -> clear screen
+LcdCr CON 13 ' Carriage return
+LcdOff CON 21 ' Turns display off
+LcdOn CON 22 ' Turns display on
+Line0 CON 128 ' Line 0, character 0
+Line1 CON 148 ' Line 1, character 0
+Define CON 248 ' Address defines cust char 0
+' -----[ Variables ]----------------------------------------------------------
+custChar VAR Byte ' Custom charcter selector
+index VAR Nib ' Eeprom index variable
+rowMap VAR Byte ' 5-pixel dotted line
+cursor VAR Byte ' Cursor placement
+value VAR Byte ' Value to be graphed
+line VAR Byte ' Line0 or Line1
+X VAR Word ' Accelerometer x-axis
+y VAR Word ' Accelerometer y-axis
+' -----[ Initialization ]-----------------------------------------------------
+PAUSE 100 ' Debounce power supply
+SEROUT LcdPin, T9600, [LcdOn, LcdCls] ' Initialize LCD
+PAUSE 5 ' 5 ms delay for clearing display
+' -----[ Main Routine ]-------------------------------------------------------
+DO ' Main loop
+PULSIN 6, 1, x
+PULSIN 7, 1, y
+value = (x MIN 1875 MAX 3125) - 1875 ** 1625 + 1
+cursor = 16 - ((y MIN 1875 MAX 3125) - 1875 ** 891)
+GOSUB Bar_Graph_H_V ' Call Bar_Graph_H_V
+LOOP ' Repeat main loop
+' -----[ Subroutines - Bar_Graph_H_V ]---------------------------------------
+' Defines and displays two axis bar graph characters based on the value of
+' the cursor (0 to 16) and value (1 to 31). Calls Def_Vert_Bar_Char, and
+' Horizontal_Placement.
+Bar_Graph_H_V:
+SEROUT 14, 84, [LcdCls] ' Clear previous plot
+PAUSE 5 ' 5 ms delay for clearing display
+' Decide whether to display on Line 0 or Line 1.
+IF value >= 16 THEN line = Line0 ELSE Line = Line1
+GOSUB Def_Vert_Bar_Char ' Define custom character
+GOSUB Horizontal_Placement
+IF value = 16 THEN ' Special case: value = 16
+value = 1 ' Line 0 display
+custChar = 2
+GOSUB Def_Vert_Bar_Char
+line = Line0
+GOSUB Horizontal_Placement
+value = 15 ' Line 1 Display
+custChar = 3
+GOSUB Def_Vert_Bar_Char
+line = Line1
+GOSUB Horizontal_Placement
+value = 16 ' Restore value
+ENDIF
+RETURN
+' -----[ Subroutine - Def_Vert_Bar_Char ]-------------------------------------
+' Defines a vertical bar graph character based on the value variable
+' (0 to 15) and the custChar variable, which selects the Parallax Serial
+' LCD's custom characters between 0 and 7.
+Def_Vert_Bar_Char:
+' Start define custom character
+SEROUT LcdPin, T9600,
+[Define + custChar]
+' Select a row map for the custom character based on value.
+rowMap = %1111111100000000 >> (value & %1111)
+' Send 8 bytes, each defining a dotted row in the custom character. Each
+' row is determined by examining a bit in the rowMap variable, and then
+' sending %11111 if the bit is 1, or %00000 if the bit is 0.
+FOR index = 0 TO 7 ' Repeat 7 times, index counts
+IF rowMap.LOWBIT(index) = 1 THEN ' Examine next bit in rowMap
+SEROUT 14, 84, [%11111] ' If 1, send %11111
+ELSE
+SEROUT 14, 84, [%00000] ' Otherwise, send %00000
+ENDIF
+NEXT
+' Return from subroutine.
+RETURN
+' -----[ Subroutines - Horizontal_Placement ]---------------------------------
+' Places the vertical bar graph at one of the Parallax 2X16 LCD's sixteen
+' vertical columns. The cursor variable can set the horizontal location to
+' values between 0 and 16, with 8 the center. Calls Disp_Custom_Char.
+Horizontal_Placement:
+SELECT cursor ' Cursor 0 to 7, no changes
+CASE 0 TO 7
+GOSUB Disp_Cust_Char
+CASE 8 ' Cursor 8, display at 7 & 8
+cursor = 7
+GOSUB Disp_Cust_Char
+cursor = 8
+GOSUB Disp_Cust_Char
+CASE 9 TO 16 ' Cursor 9 to 16, display 1 left
+cursor = cursor - 1
+GOSUB Disp_Cust_Char
+cursor = cursor + 1
+ENDSELECT
+RETURN
+' -----[ Subroutines - Disp_Cust_Char ]---------------------------------------
+' This subroutine displays a custom character. The line variable can
+' be set to either Line0 or Line1, and the cursor variable can be set
+' to a value between 0 and 15. The custChar variable selects one of the
+' LCD's custom characters and should be set to a value between 0 and 7.
+Disp_Cust_Char:
+SEROUT LcdPin, T9600, ' Print custom character
+[line + cursor, custChar]
+RETURN

@@ -1,0 +1,94 @@
+' {$STAMP BS2} ' Target device = BASIC Stamp 2   ---------------------------------Project 1 is to have cm showed in the bottom
+' {$PBASIC 2.5} ' Language = PBASIC 2.5
+' -----[ I/O Pins ]-----------------------------------------------------------
+LcdPin PIN 14 ' I/O pin connected to LCD's RX
+' -----[ Constants ]----------------------------------------------------------
+T9600 CON 84 ' True, 8-bits, no parity, 9600
+LcdCls CON 12 ' Form feed -> clear screen
+LcdCr CON 13 ' Carriage return
+LcdOff CON 21 ' Turns display off
+LcdOn CON 22 ' Turns display on
+Line0 CON 128 ' Line 0, character 0
+Line1 CON 148 ' Line 1, character 0
+Define CON 248 ' Address defines cust char 0
+CmConstant CON 2260
+' -----[ Variables ]----------------------------------------------------------
+custChar VAR Nib ' Custom charcter selector
+index VAR Nib ' Eeprom index variable
+dotLine VAR Byte ' 5-pixel dotted line
+cursor VAR Nib ' Cursor placement
+value VAR Byte ' Value to be graphed.
+charCnt VAR Byte ' Character counting variable
+line VAR Byte ' Line0 or Line1
+time VAR Word
+cmDistance VAR Word
+' -----[ Initialization ]-----------------------------------------------------
+PAUSE 100 ' Debounce power supply
+SEROUT LcdPin, T9600, [LcdOn, LcdCls] ' Initialize LCD
+PAUSE 5 ' 5 ms delay for clearing display
+custChar = 3 ' Select Custom Character 3
+dotLine = %11111 ' Black all pixels in each line
+GOSUB Def_Horiz_Bar_Char ' Character define subroutine
+line = Line0 ' BarGraph on Line 0.
+DEBUG "Enter values (0 to 80)", CR
+' -----[ Main Routine ]-------------------------------------------------------
+DO ' Main loop
+PULSOUT 15, 5
+PULSIN 15, 1, time
+cmDistance = CmConstant ** time
+SEROUT 14, 84, [188, DEC3 cmDistance, " cm"]
+value = cmDistance
+GOSUB Bar_Graph ' Display as bar graph
+PAUSE 100
+LOOP ' Repeat main loop
+' -----[ Subroutine - Bar_Graph ]---------------------------------------------
+Bar_Graph:
+' Fill from left with black bars
+value = value MAX 80 ' Limit value - 0 to 80
+charCnt = value / 5 ' Number of black bars
+custChar = 3 ' Choose black custom character
+IF charCnt > 0 THEN ' If black bars to print then
+FOR cursor = 0 TO charCnt - 1 ' Print charCnt - 1 black bars
+GOSUB Disp_Cust_Char ' Print the black bar
+NEXT
+ENDIF
+' Display Custom Character 2 with a certain number of black columns.
+cursor = charCnt ' Place cursor
+custChar = value // 5 ' How many 5ths of a bar?
+' Choose bit pattern for custom character definition
+LOOKUP custChar,
+[%00000, %10000, %11000, %11100, %11110],
+dotLine
+custChar = 2 ' Set custom character to 2
+GOSUB Def_Horiz_Bar_Char ' Define the custom character
+GOSUB Disp_Cust_Char ' Display the custom character
+' Print over everything to the right with spaces.
+IF (charCnt + 1) < 15 THEN ' Partial char left of char 15?
+FOR cursor = (charCnt + 1) TO 15 ' Fill to right with " "
+SEROUT LcdPin, T9600,
+[line + cursor, " "]
+NEXT
+ELSEIF value = 80 THEN ' Special case: value = 80
+SEROUT LcdPin, T9600,
+[line + cursor, 3]
+ELSEIF charCnt = 14 THEN ' Special case: 75 <= value <= 80
+SEROUT LcdPin, T9600, [line + 15, " "]
+ENDIF
+RETURN
+' -----[ Subroutine - Def_Horiz_Bar_Char ]------------------------------------
+Def_Horiz_Bar_Char:
+SEROUT LcdPin, T9600, ' Define custom character
+[Define + custChar]
+FOR index = 0 TO 7 ' 7 bytes, define 7 dotted lines
+SEROUT LcdPin, T9600, [dotLine] ' Send it to the LCD
+NEXT
+RETURN
+' -----[ Subroutines - Disp_Cust_Char ]---------------------------------------
+' This subroutine displays a custom character. The line variable can
+' be set to either Line0 or Line1, and the cursor variable can be set
+' to a value between 0 and 15. The custChar variable selects one of the
+' LCD's custom characters and should be set to a value between 0 and 7.
+Disp_Cust_Char:
+SEROUT LcdPin, T9600, ' Print custom character
+[line + cursor, custChar]
+RETURN
