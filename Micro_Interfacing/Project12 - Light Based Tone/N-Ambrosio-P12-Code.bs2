@@ -1,0 +1,111 @@
+' Nicholas Ambrosio - Project 12 - Due: May 05, 2026
+' {$STAMP BS2}
+' {$PBASIC 2.5}
+
+'Pin 15 - Light Sesnor
+'Pin 14 - LCD
+'Pin 13 - Servo
+'Pin 0-9 - LEDs
+
+'------------------Variables------------------------
+lightLevel VAR Word 'Stores the frequency of the signal from the light sensor
+ambientLightLvl VAR Word 'Stores the initial light level
+intensity VAR Nib 'Stores the light intensity on a scale of 1-10 (1 being the darkest)
+servoPos VAR Word 'The position the servo should be at
+
+'---------------Initializiation---------------------
+DIRS = %1011111111111111
+SEROUT 14, 84, 5, [22, 12, 17, 208] 'Turn on LCD, Clear screen, Turn on backlight, Short Tone Length
+PAUSE 500
+SEROUT 14, 84, [248, %00000,%00000,%00000,%11111,%11111,%00000,%00000,%00000] 'Custom Character 0
+SEROUT 14, 84, [249, %00000,%00000,%11111,%11111,%11111,%11111,%00000,%00000] 'Custom Character 1
+SEROUT 14, 84, [250, %00000,%11111,%11111,%11111,%11111,%11111,%11111,%00000] 'Custom Character 2
+SEROUT 14, 84, [251, %11111,%11111,%11111,%11111,%11111,%11111,%11111,%11111] 'Custom Character 3
+SEROUT 14, 84, [252, %10000,%10000,%10000,%11111,%11111,%10000,%10000,%10000] 'Custom Character 4
+
+GOSUB getAmbientLevel
+
+'------------------Main-Routine---------------------
+main:
+DO
+  GOSUB getIntensity
+  SEROUT 14, 84, [128, "Light Intensity: ", DEC2 intensity] 'Display the light intensity on the LCD
+  GOSUB drawGraphPlaySound
+  GOSUB changeLightsAndServoPos
+
+  PULSOUT 13, servoPos
+  PAUSE 20
+  PULSOUT 13, servoPos
+  PAUSE 20
+LOOP
+
+'------------------Sub-Routines---------------------
+getIntensity:
+  COUNT 15, 50, lightLevel
+  intensity = (lightLevel / (ambientLightLvl / 10)) MIN 1 MAX 10 'The divisor should be 1/10th of the highest value from the light sensor
+RETURN
+'----------------------------------
+drawGraphPlaySound:
+  SELECT intensity
+  CASE 1:
+    SEROUT 14, 84, [168, 4, "                   ",208, 217, 220] 'A5
+  CASE 2:
+    SEROUT 14, 84, [168, 4, 0, 0, 0,  "                ",208, 217, 222] 'B5
+  CASE 3:
+    SEROUT 14, 84, [168, 4, 0, 0, 0, 1, 1, "              ",208, 218, 223] 'C6
+  CASE 4:
+    SEROUT 14, 84, [168, 4, 0, 0, 0, 1, 1, 1, 1, "            ",208, 218, 225] 'D6
+  CASE 5:
+    SEROUT 14, 84, [168, 4, 0, 0, 0, 1, 1, 1, 1, 2, 2, "          ",208, 218, 227] 'E6
+  CASE 6:
+    SEROUT 14, 84, [168, 4, 0, 0, 0, 1, 1, 1, 1, 2, 2, 2, 2, "        ",208, 218, 228] 'F6
+  CASE 7:
+    SEROUT 14, 84, [168, 4, 0, 0, 0, 1, 1, 1, 1, 2, 2, 2, 2, 2, 3, "      ",208, 218, 230] 'G6
+  CASE 8:
+    SEROUT 14, 84, [168, 4, 0, 0, 0, 1, 1, 1, 1, 2, 2, 2, 2, 2, 3, 3, 3, "    ",208, 218, 220] 'A6
+  CASE 9:
+    SEROUT 14, 84, [168, 4, 0, 0, 0, 1, 1, 1, 1, 2, 2, 2, 2, 2, 3, 3, 3, 3, 3, "  ",208, 218, 222] 'B6
+  CASE 10:
+    SEROUT 14, 84, [168, 4, 0, 0, 0, 1, 1, 1, 1, 2, 2, 2, 2, 2, 3, 3, 3, 3, 3, 3, 3,208, 219, 223] 'C7
+  ENDSELECT
+RETURN
+'----------------------------------
+changeLightsAndServoPos:
+  SELECT intensity
+  CASE 1:
+    OUTS = %0100001111111111
+    servoPos = 1250
+  CASE 2:
+    OUTS = %0100000111111111
+    servoPos = 1148
+  CASE 3:
+    OUTS = %0100000011111111
+    servoPos = 1047
+  CASE 4:
+    OUTS = %0100000001111111
+    servoPos = 946
+  CASE 5:
+    OUTS = %0100000000111111
+    servoPos = 845
+  CASE 6:
+    OUTS = %0100000000011111
+    servoPos = 744
+  CASE 7:
+    OUTS = %0100000000001111
+    servoPos = 643
+  CASE 8:
+    OUTS = %0100000000000111
+    servoPos = 542
+  CASE 9:
+    OUTS = %0100000000000011
+    servoPos = 441
+  CASE 10:
+    OUTS = %0100000000000001
+    servoPos = 340
+  ENDSELECT
+RETURN
+'----------------------------------
+getAmbientLevel:
+  COUNT 15, 50, ambientLightLvl 'Grabs the initial light level and uses that as the max for other levels
+  DEBUG ? ambientLightLvl
+RETURN
