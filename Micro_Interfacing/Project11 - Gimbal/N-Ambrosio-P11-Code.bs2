@@ -1,0 +1,203 @@
+' Nicholas Ambroiso - Project 11 - Due: May 05, 2026
+' Gimbal Project - Uses 2 servos and an accelerometer to balance a camera (in theory)
+' {$STAMP BS2}
+' {$PBASIC 2.5}
+
+' Pin 14 = LCD
+' Pin 13 = ServoX
+' Pin 12 = ServoY
+' Pin 1 = Y-Axis Accelerometer
+' Pin 0 = X-Axis Accelerometer
+
+'----------------------------------------Variables----------------------------------------
+servoPosX VAR Word ' Pulse of 280 is about 0 degrees, Pulse of 760 is about 90 degrees , Pulse of 1300 is about 180 degrees
+servoPosY VAR Word ' Pulses for the Y direction servo
+
+targetPosX VAR Word
+
+idx VAR Nib ' Just a helpful variable for loops and such
+
+xCoord VAR Byte
+yCoord VAR Byte
+charIdx VAR Byte ' Which character (128-207) should be filled on the graph
+lastCharIdx VAR Byte ' Which character on teh LCD was the last pixel at
+
+x VAR Word ' Holds the x-axis measurement. 2490 = 0 degrees, 3100 = -90 degrees, 1882 = 90 degrees
+y VAR Word ' Holds the y-axis measurement. 2500 = 0 degrees, 1890 = 90 degrees, 3105 = -90 degrees
+xDeg VAR Word ' Holds the x-axis measurement in degrees (-90 to 90)
+yDeg VAR Word ' Holds the y-axis measurement in degrees (-90 to 90)
+
+'-------------------------------------Initialization--------------------------------------
+SEROUT 14, 84, 100, [22,12,17]
+charIdx = 143
+SEROUT 14, 84, [248, %00100, %00100, %00100, %00100, %00100, %00100, %00100, %00100] 'Custom Character 0 = |
+SEROUT 14, 84, [249, %00000, %00000, %00000, %00000, %00000, %00000, %00000, %11111] 'Custom Character 1 = _
+SEROUT 14, 84, [250, %00100, %00100, %00100, %00100, %00100, %00100, %00100, %11111] 'Custom Character 2 = |_
+SEROUT 14, 84, [251, %00000, %00100, %01010, %00100, %00000, %00000, %00000, %00000] 'Custom Character 3 = Degree Symbol
+
+'-----------------------------------------Program-----------------------------------------
+main:
+DO
+  GOSUB drawAxis
+  GOSUB getTilt
+  GOSUB drawPoint
+
+  GOSUB moveServo
+LOOP
+
+'--------------------------------------SubRoutines----------------------------------------
+findServoPos:
+
+RETURN
+'------------------------------------------------------
+moveServo:
+  FOR idx = 0 TO 5
+  servoPosX = (x ** 54912) - 1297
+  servoPosY = (y ** 54912) - 1297
+  PULSOUT 13, servoPosX
+  PULSOUT 12, servoPosY
+  PAUSE 20
+  NEXT
+
+RETURN
+'------------------------------------------------------
+getTilt:
+  ' Get the measurements from the accelerometer
+  PULSIN 0, 1, x
+  PULSIN 1, 1, y
+
+  ' Convert the measurements into degrees
+  xDeg = (((x MIN 1882 MAX 3100) - 1882) ** 9685) - 90
+  yDeg = (((y MIN 1890 MAX 3105) - 1890) ** 9709) - 90
+
+  ' Display degrees on the LCD
+  SEROUT 14, 84, [128, "x = ", SDEC2 xDeg, 3, "  "]
+  SEROUT 14, 84, [148, "y = ", SDEC2 yDeg, 3, "  "]
+
+RETURN
+'------------------------------------------------------
+drawAxis:
+  SEROUT 14, 84, [143, 0, 183, 0, 203, 0, 160, 1, 1, 1, 1, 1, 1, 1, 163, 2, charIdx, 4]
+RETURN
+'------------------------------------------------------
+drawPoint:
+  'Convert from an angle into the coords of a pixel on our graph
+  'an x angle of -90* = an idx of 0, x angle of +90* = and idx of 34.
+   xCoord = ((xDeg + 90) ** 12380)
+
+  'a y angle of -90* = an idx of 31, y angle of +90* = and idx of 0. (But invert it so that top left is (0,0)
+   yCoord =  (31 - ((yDeg + 90) ** 11287)) - 1
+
+  'choose the specific pixel within a character
+  GOSUB setCharacter4
+
+  'choose the correct character on the LCD screen
+  lastCharIdx = charIdx
+  charIdx = 140 + (xCoord / 5) + (((yCoord / 8) * 20))
+
+  IF NOT(lastCharIdx = charIdx) THEN
+    SEROUT 14, 84, [lastCharIdx, " ", charIdx, 4]
+  ELSE
+    SEROUT 14, 84, [charIdx, 4]
+  ENDIF
+
+RETURN
+'------------------------------------------------------
+setCharacter4:
+  IF xCoord // 5 = 0 THEN
+    SELECT (yCoord // 8)
+    CASE 0:
+      SEROUT 14,84, [252, %10000,%00000,%00000,%00000,%00000,%00000,%00000,%00000] ' Set 1 pixel in Custom Character 4
+    CASE 1:
+      SEROUT 14,84, [252, %00000,%10000,%00000,%00000,%00000,%00000,%00000,%00000] ' Set 1 pixel in Custom Character 4
+    CASE 2:
+      SEROUT 14,84, [252, %00000,%00000,%10000,%00000,%00000,%00000,%00000,%00000] ' Set 1 pixel in Custom Character 4
+    CASE 3:
+      SEROUT 14,84, [252, %00000,%00000,%00000,%10000,%00000,%00000,%00000,%00000] ' Set 1 pixel in Custom Character 4
+    CASE 4:
+      SEROUT 14,84, [252, %00000,%00000,%00000,%00000,%10000,%00000,%00000,%00000] ' Set 1 pixel in Custom Character 4
+    CASE 5:
+      SEROUT 14,84, [252, %00000,%00000,%00000,%00000,%00000,%10000,%00000,%00000] ' Set 1 pixel in Custom Character 4
+    CASE 6:
+      SEROUT 14,84, [252, %00000,%00000,%00000,%00000,%00000,%00000,%10000,%00000] ' Set 1 pixel in Custom Character 4
+    CASE 7:
+      SEROUT 14,84, [252, %00000,%00000,%00000,%00000,%00000,%00000,%00000,%10000] ' Set 1 pixel in Custom Character 4
+    ENDSELECT
+  ELSEIF xCoord // 5 = 1 THEN
+    SELECT (yCoord // 8)
+    CASE 0:
+      SEROUT 14,84, [252, %01000,%00000,%00000,%00000,%00000,%00000,%00000,%00000] ' Set 1 pixel in Custom Character 4
+    CASE 1:
+      SEROUT 14,84, [252, %00000,%01000,%00000,%00000,%00000,%00000,%00000,%00000] ' Set 1 pixel in Custom Character 4
+    CASE 2:
+      SEROUT 14,84, [252, %00000,%00000,%01000,%00000,%00000,%00000,%00000,%00000] ' Set 1 pixel in Custom Character 4
+    CASE 3:
+      SEROUT 14,84, [252, %00000,%00000,%00000,%01000,%00000,%00000,%00000,%00000] ' Set 1 pixel in Custom Character 4
+    CASE 4:
+      SEROUT 14,84, [252, %00000,%00000,%00000,%00000,%01000,%00000,%00000,%00000] ' Set 1 pixel in Custom Character 4
+    CASE 5:
+      SEROUT 14,84, [252, %00000,%00000,%00000,%00000,%00000,%01000,%00000,%00000] ' Set 1 pixel in Custom Character 4
+    CASE 6:
+      SEROUT 14,84, [252, %00000,%00000,%00000,%00000,%00000,%00000,%01000,%00000] ' Set 1 pixel in Custom Character 4
+    CASE 7:
+      SEROUT 14,84, [252, %00000,%00000,%00000,%00000,%00000,%00000,%00000,%01000] ' Set 1 pixel in Custom Character 4
+    ENDSELECT
+  ELSEIF xCoord // 5 = 2 THEN
+    SELECT (yCoord // 8)
+    CASE 0:
+      SEROUT 14,84, [252, %00100,%00000,%00000,%00000,%00000,%00000,%00000,%00000] ' Set 1 pixel in Custom Character 4
+    CASE 1:
+      SEROUT 14,84, [252, %00000,%00100,%00000,%00000,%00000,%00000,%00000,%00000] ' Set 1 pixel in Custom Character 4
+    CASE 2:
+      SEROUT 14,84, [252, %00000,%00000,%00100,%00000,%00000,%00000,%00000,%00000] ' Set 1 pixel in Custom Character 4
+    CASE 3:
+      SEROUT 14,84, [252, %00000,%00000,%00000,%00100,%00000,%00000,%00000,%00000] ' Set 1 pixel in Custom Character 4
+    CASE 4:
+      SEROUT 14,84, [252, %00000,%00000,%00000,%00000,%00100,%00000,%00000,%00000] ' Set 1 pixel in Custom Character 4
+    CASE 5:
+      SEROUT 14,84, [252, %00000,%00000,%00000,%00000,%00000,%00100,%00000,%00000] ' Set 1 pixel in Custom Character 4
+    CASE 6:
+      SEROUT 14,84, [252, %00000,%00000,%00000,%00000,%00000,%00000,%00100,%00000] ' Set 1 pixel in Custom Character 4
+    CASE 7:
+      SEROUT 14,84, [252, %00000,%00000,%00000,%00000,%00000,%00000,%00000,%00100] ' Set 1 pixel in Custom Character 4
+    ENDSELECT
+  ELSEIF xCoord // 5 = 3 THEN
+    SELECT (yCoord // 8)
+    CASE 0:
+      SEROUT 14,84, [252, %00010,%00000,%00000,%00000,%00000,%00000,%00000,%00000] ' Set 1 pixel in Custom Character 4
+    CASE 1:
+      SEROUT 14,84, [252, %00000,%00010,%00000,%00000,%00000,%00000,%00000,%00000] ' Set 1 pixel in Custom Character 4
+    CASE 2:
+      SEROUT 14,84, [252, %00000,%00000,%00010,%00000,%00000,%00000,%00000,%00000] ' Set 1 pixel in Custom Character 4
+    CASE 3:
+      SEROUT 14,84, [252, %00000,%00000,%00000,%00010,%00000,%00000,%00000,%00000] ' Set 1 pixel in Custom Character 4
+    CASE 4:
+      SEROUT 14,84, [252, %00000,%00000,%00000,%00000,%00010,%00000,%00000,%00000] ' Set 1 pixel in Custom Character 4
+    CASE 5:
+      SEROUT 14,84, [252, %00000,%00000,%00000,%00000,%00000,%00010,%00000,%00000] ' Set 1 pixel in Custom Character 4
+    CASE 6:
+      SEROUT 14,84, [252, %00000,%00000,%00000,%00000,%00000,%00000,%00010,%00000] ' Set 1 pixel in Custom Character 4
+    CASE 7:
+      SEROUT 14,84, [252, %00000,%00000,%00000,%00000,%00000,%00000,%00000,%00010] ' Set 1 pixel in Custom Character 4
+    ENDSELECT
+  ELSEIF xCoord // 5 = 4 THEN
+    SELECT (yCoord // 8)
+    CASE 0:
+      SEROUT 14,84, [252, %00001,%00000,%00000,%00000,%00000,%00000,%00000,%00000] ' Set 1 pixel in Custom Character 4
+    CASE 1:
+      SEROUT 14,84, [252, %00000,%00001,%00000,%00000,%00000,%00000,%00000,%00000] ' Set 1 pixel in Custom Character 4
+    CASE 2:
+      SEROUT 14,84, [252, %00000,%00000,%00001,%00000,%00000,%00000,%00000,%00000] ' Set 1 pixel in Custom Character 4
+    CASE 3:
+      SEROUT 14,84, [252, %00000,%00000,%00000,%00001,%00000,%00000,%00000,%00000] ' Set 1 pixel in Custom Character 4
+    CASE 4:
+      SEROUT 14,84, [252, %00000,%00000,%00000,%00000,%00001,%00000,%00000,%00000] ' Set 1 pixel in Custom Character 4
+    CASE 5:
+      SEROUT 14,84, [252, %00000,%00000,%00000,%00000,%00000,%00001,%00000,%00000] ' Set 1 pixel in Custom Character 4
+    CASE 6:
+      SEROUT 14,84, [252, %00000,%00000,%00000,%00000,%00000,%00000,%00001,%00000] ' Set 1 pixel in Custom Character 4
+    CASE 7:
+      SEROUT 14,84, [252, %00000,%00000,%00000,%00000,%00000,%00000,%00000,%00001] ' Set 1 pixel in Custom Character 4
+    ENDSELECT
+  ENDIF
+RETURN
